@@ -167,7 +167,7 @@
       </div>
     </div>
 
-    <!-- Floating Anim Elements (safely stashed in body until needed) -->
+    <!-- Floating Anim Elements -->
     <div
       id="threeAnimContainer"
       class="absolute inset-0 z-10 hidden cursor-move rounded-lg"
@@ -189,7 +189,6 @@
     <div
       class="flex-1 flex w-full max-w-6xl mx-auto my-4 bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative"
     >
-      <!-- Left Pane -->
       <div
         class="w-1/3 target-bg relative flex flex-col items-center justify-center border-r-4 border-white cursor-move"
         id="targetPane"
@@ -207,7 +206,6 @@
         </div>
       </div>
 
-      <!-- Right Pane -->
       <div
         class="w-2/3 p-4 bg-gray-300 relative overflow-hidden flex flex-col"
         id="rightPane"
@@ -217,19 +215,16 @@
         >
           Choose the correct Net
         </h2>
-
         <div
           class="w-full flex-1 blueprint-grid rounded-lg p-4 grid grid-cols-2 grid-rows-2 gap-4 relative"
           id="optionsGrid"
         ></div>
 
-        <!-- Full Screen Overlay (for correct answer zoom) -->
+        <!-- Full Screen Overlay -->
         <div
           id="animationCenter"
           class="absolute inset-0 pointer-events-none hidden items-center justify-center transition-opacity duration-500 z-30 rounded-xl m-4 bg-white/90 backdrop-blur-sm shadow-2xl border-4 border-green-400"
-        >
-          <!-- Content injected here on success -->
-        </div>
+        ></div>
       </div>
     </div>
 
@@ -250,7 +245,6 @@
     </div>
 
     <script>
-      // --- HIGH CONTRAST Dynamic Color Palette ---
       const PALETTE = [
         "#ef4444",
         "#3b82f6",
@@ -262,1151 +256,552 @@
         "#14b8a6",
       ];
 
-      // --- Level Data Architecture ---
-      const levelTiers = {
-        tier1: [
-          {
-            // CUBE
-            id: "cube",
-            threeDProps: {
-              type: "box",
-              w: 1.5,
-              h: 1.5,
-              d: 1.5,
-              rotX: 0.5,
-              rotY: -0.6,
-              colors: [1, 1, 2, 2, 0, 0],
-            },
+      // ==========================================
+      // PROCEDURAL NET GENERATOR ENGINE
+      // ==========================================
+      const NetGenerator = {
+        // Core algorithm to unroll any prism into a 2D DOM Tree dynamically
+        generatePrismNet: function (
+          sides,
+          w,
+          h,
+          capW,
+          capH,
+          baseCapShape,
+          topIdx,
+          bottomIdx,
+          mutator,
+        ) {
+          const bodyAngle = -(360 / sides);
+          let actualSides = mutator === "extra-side" ? sides + 1 : sides;
+
+          function buildSide(index) {
+            let node = {
+              w: w,
+              h: h,
+              shape: "rectangle",
+              children: [],
+              color: sides === 4 && index % 2 !== 0 ? 1 : 0,
+            };
+
+            // Add next segment of the body wrapper
+            if (index < actualSides - 1) {
+              node.children.push({
+                edge: "right",
+                foldAngle: bodyAngle,
+                ...buildSide(index + 1),
+              });
+            }
+
+            // Top Cap
+            if (index === topIdx && mutator !== "missing-cap") {
+              let s = baseCapShape;
+              if (s === "triangle") s = "triangle-up";
+              if (mutator === "wrong-shape") s = "rectangle";
+
+              node.children.push({
+                edge: "top",
+                w: capW,
+                h: capH,
+                color: sides === 4 ? 2 : 1,
+                foldAngle: 90,
+                shape: s,
+              });
+            }
+
+            // Bottom Cap (or forced Overlap)
+            if (
+              mutator === "overlap-caps" &&
+              index === (topIdx + 1) % actualSides
+            ) {
+              let s = baseCapShape;
+              if (s === "triangle") s = "triangle-up"; // Clashes on top
+              node.children.push({
+                edge: "top",
+                w: capW,
+                h: capH,
+                color: sides === 4 ? 2 : 1,
+                foldAngle: 90,
+                shape: s,
+              });
+            } else if (
+              mutator !== "overlap-caps" &&
+              mutator !== "missing-cap" &&
+              index === bottomIdx
+            ) {
+              let s = baseCapShape;
+              if (s === "triangle") s = "triangle-down";
+              if (s === "pentagon") s = "pentagon-down";
+              if (mutator === "wrong-shape") s = "rectangle";
+              node.children.push({
+                edge: "bottom",
+                w: capW,
+                h: capH,
+                color: sides === 4 ? 2 : 1,
+                foldAngle: -90,
+                shape: s,
+              });
+            }
+            return node;
+          }
+          return { root: buildSide(0) };
+        },
+
+        // Hardcoded Pyramid Generator since radial folds work differently than strip folds
+        generatePyramidNet: function (mutator) {
+          let children = [];
+          if (mutator !== "missing-cap")
+            children.push({
+              edge: "bottom",
+              w: 40,
+              h: 50,
+              color: 0,
+              shape: "triangle-down",
+              foldAngle: -113.6,
+            });
+
+          if (mutator === "overlap-caps") {
+            children.push({
+              edge: "top",
+              w: 40,
+              h: 50,
+              color: 0,
+              shape: "triangle-up",
+              foldAngle: 113.6,
+            });
+            children.push({
+              edge: "top",
+              w: 40,
+              h: 50,
+              color: 0,
+              shape: "triangle-up",
+              foldAngle: 113.6,
+            });
+            children.push({
+              edge: "left",
+              w: 50,
+              h: 40,
+              color: 0,
+              shape: "triangle-left",
+              foldAngle: 113.6,
+            });
+          } else {
+            children.push({
+              edge: "top",
+              w: 40,
+              h: 50,
+              color: 0,
+              shape: "triangle-up",
+              foldAngle: 113.6,
+            });
+            children.push({
+              edge: "left",
+              w: 50,
+              h: 40,
+              color: 0,
+              shape: "triangle-left",
+              foldAngle: 113.6,
+            });
+            children.push({
+              edge: "right",
+              w: 50,
+              h: 40,
+              color: 0,
+              shape: "triangle-right",
+              foldAngle: -113.6,
+            });
+          }
+          return { root: { w: 40, h: 40, color: 1, children: children } };
+        },
+
+        // --- TIER ENGINES ---
+        tier1: function () {
+          const isCube = Math.random() > 0.5;
+          const sides = 4,
+            w = 40,
+            h = isCube ? 40 : 80;
+          const dProps = isCube
+            ? {
+                type: "box",
+                w: 1.5,
+                h: 1.5,
+                d: 1.5,
+                rotX: 0.5,
+                rotY: -0.6,
+                colors: [1, 1, 2, 2, 0, 0],
+              }
+            : {
+                type: "box",
+                w: 1,
+                h: 2,
+                d: 1,
+                rotX: 0.4,
+                rotY: -0.5,
+                colors: [1, 1, 2, 2, 0, 0],
+              };
+
+          // Randomize where the caps attach to dynamically generate T-shapes, Crosses, Z-shapes, etc!
+          const t1 = Math.floor(Math.random() * sides);
+          const b1 = Math.floor(Math.random() * sides);
+
+          return {
+            id: isCube ? "cube" : "cuboid",
+            threeDProps: dProps,
             nets: [
               {
                 isCorrect: true,
-                root: {
-                  w: 60,
-                  h: 60,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 60,
-                      h: 60,
-                      color: 1,
-                      foldAngle: -90,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 60,
-                          h: 60,
-                          color: 0,
-                          foldAngle: -90,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 60,
-                              h: 60,
-                              color: 1,
-                              foldAngle: -90,
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    { edge: "top", w: 60, h: 60, color: 2, foldAngle: 90 },
-                    { edge: "bottom", w: 60, h: 60, color: 2, foldAngle: -90 },
-                  ],
-                },
+                ...this.generatePrismNet(
+                  sides,
+                  w,
+                  h,
+                  w,
+                  w,
+                  "rectangle",
+                  t1,
+                  b1,
+                  "correct",
+                ),
               },
               {
                 isCorrect: false,
-                root: {
-                  w: 60,
-                  h: 60,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 60,
-                      h: 60,
-                      color: 1,
-                      foldAngle: -90,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 60,
-                          h: 60,
-                          color: 0,
-                          foldAngle: -90,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 60,
-                              h: 60,
-                              color: 1,
-                              foldAngle: -90,
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    { edge: "top", w: 60, h: 60, color: 0, foldAngle: 90 },
-                    { edge: "bottom", w: 60, h: 60, color: 2, foldAngle: -90 },
-                  ],
-                },
+                ...this.generatePrismNet(
+                  sides,
+                  w,
+                  h,
+                  w,
+                  w,
+                  "rectangle",
+                  t1,
+                  b1,
+                  "overlap-caps",
+                ),
               },
               {
                 isCorrect: false,
-                root: {
-                  w: 60,
-                  h: 60,
-                  color: 0,
-                  children: [
-                    { edge: "right", w: 60, h: 60, color: 1, foldAngle: -90 },
-                    {
-                      edge: "top",
-                      w: 60,
-                      h: 60,
-                      color: 2,
-                      foldAngle: 90,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 60,
-                          h: 60,
-                          color: 0,
-                          foldAngle: -90,
-                        },
-                      ],
-                    },
-                    { edge: "bottom", w: 60, h: 60, color: 2, foldAngle: -90 },
-                    { edge: "left", w: 60, h: 60, color: 1, foldAngle: 90 },
-                  ],
-                },
+                ...this.generatePrismNet(
+                  sides,
+                  w,
+                  h,
+                  w,
+                  w,
+                  "rectangle",
+                  t1,
+                  b1,
+                  "missing-cap",
+                ),
               },
               {
                 isCorrect: false,
-                root: {
-                  w: 60,
-                  h: 60,
-                  color: 0,
-                  children: [
-                    { edge: "right", w: 60, h: 60, color: 1, foldAngle: -90 },
-                    { edge: "top", w: 60, h: 60, color: 2, foldAngle: 90 },
-                    { edge: "bottom", w: 60, h: 60, color: 2, foldAngle: -90 },
-                    { edge: "left", w: 60, h: 60, color: 1, foldAngle: 90 },
-                  ],
-                },
+                ...this.generatePrismNet(
+                  sides,
+                  w,
+                  h,
+                  w,
+                  w,
+                  "rectangle",
+                  t1,
+                  b1,
+                  "extra-side",
+                ),
               },
             ],
-          },
-          {
-            // CUBOID
-            id: "cuboid",
-            threeDProps: {
-              type: "box",
-              w: 1,
-              h: 2,
-              d: 1,
-              rotX: 0.4,
-              rotY: -0.5,
-              colors: [1, 1, 2, 2, 0, 0],
-            },
-            nets: [
-              {
-                isCorrect: true,
-                root: {
-                  w: 40,
-                  h: 80,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 40,
-                      h: 80,
-                      color: 1,
-                      foldAngle: -90,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 40,
-                          h: 80,
-                          color: 0,
-                          foldAngle: -90,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 40,
-                              h: 80,
-                              color: 1,
-                              foldAngle: -90,
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    { edge: "top", w: 40, h: 40, color: 2, foldAngle: 90 },
-                    { edge: "bottom", w: 40, h: 40, color: 2, foldAngle: -90 },
-                  ],
-                },
+          };
+        },
+
+        tier2: function () {
+          const isTriPrism = Math.random() > 0.5;
+          if (isTriPrism) {
+            const sides = 3,
+              w = 46,
+              h = 80;
+            const t1 = Math.floor(Math.random() * sides);
+            const b1 = Math.floor(Math.random() * sides);
+            return {
+              id: "tri_prism",
+              threeDProps: {
+                type: "prism",
+                sides: 3,
+                radius: 0.664,
+                d: 2,
+                rotX: -0.3,
+                rotY: -0.8,
+                colors: [0, 1, 1],
               },
-              {
-                isCorrect: false,
-                root: {
-                  w: 40,
-                  h: 80,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 40,
-                      h: 80,
-                      color: 1,
-                      foldAngle: -90,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 40,
-                          h: 80,
-                          color: 0,
-                          foldAngle: -90,
-                        },
-                        { edge: "top", w: 40, h: 40, color: 2, foldAngle: 90 },
-                      ],
-                    },
-                    { edge: "top", w: 40, h: 40, color: 2, foldAngle: 90 },
-                    { edge: "left", w: 40, h: 80, color: 1, foldAngle: 90 },
-                  ],
+              nets: [
+                {
+                  isCorrect: true,
+                  ...this.generatePrismNet(
+                    sides,
+                    w,
+                    h,
+                    46,
+                    40,
+                    "triangle",
+                    t1,
+                    b1,
+                    "correct",
+                  ),
                 },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 40,
-                  h: 80,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 40,
-                      h: 80,
-                      color: 1,
-                      foldAngle: -90,
-                      children: [
-                        { edge: "top", w: 40, h: 40, color: 2, foldAngle: 90 },
-                        {
-                          edge: "bottom",
-                          w: 40,
-                          h: 40,
-                          color: 2,
-                          foldAngle: -90,
-                        },
-                      ],
-                    },
-                    { edge: "left", w: 40, h: 80, color: 1, foldAngle: 90 },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    sides,
+                    w,
+                    h,
+                    46,
+                    46,
+                    "rectangle",
+                    t1,
+                    b1,
+                    "wrong-shape",
+                  ),
                 },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 40,
-                  h: 80,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 40,
-                      h: 80,
-                      color: 1,
-                      foldAngle: -90,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 40,
-                          h: 80,
-                          color: 0,
-                          foldAngle: -90,
-                        },
-                        {
-                          edge: "right",
-                          w: 40,
-                          h: 40,
-                          color: 2,
-                          foldAngle: -90,
-                        },
-                        {
-                          edge: "bottom",
-                          w: 40,
-                          h: 40,
-                          color: 2,
-                          foldAngle: -90,
-                        },
-                      ],
-                    },
-                    { edge: "left", w: 40, h: 80, color: 1, foldAngle: 90 },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    sides,
+                    w,
+                    h,
+                    46,
+                    40,
+                    "triangle",
+                    t1,
+                    b1,
+                    "overlap-caps",
+                  ),
                 },
-              },
-            ],
-          },
-        ],
-        tier2: [
-          {
-            // TRIANGULAR PRISM
-            id: "tri_prism",
-            threeDProps: {
-              type: "prism",
-              sides: 3,
-              radius: 0.664,
-              d: 2,
-              rotX: -0.3,
-              rotY: -0.8,
-              colors: [0, 1, 1],
-            },
-            nets: [
-              {
-                isCorrect: true,
-                root: {
-                  w: 46,
-                  h: 80,
-                  color: 0,
-                  children: [
-                    { edge: "left", w: 46, h: 80, color: 0, foldAngle: 120 },
-                    { edge: "right", w: 46, h: 80, color: 0, foldAngle: -120 },
-                    {
-                      edge: "top",
-                      w: 46,
-                      h: 40,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "triangle-up",
-                    },
-                    {
-                      edge: "bottom",
-                      w: 46,
-                      h: 40,
-                      color: 1,
-                      foldAngle: -90,
-                      shape: "triangle-down",
-                    },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    sides,
+                    w,
+                    h,
+                    46,
+                    40,
+                    "triangle",
+                    t1,
+                    b1,
+                    "extra-side",
+                  ),
                 },
+              ],
+            };
+          } else {
+            return {
+              id: "sq_pyramid",
+              threeDProps: {
+                type: "pyramid",
+                sides: 4,
+                radius: 0.707,
+                d: 1.145,
+                rotX: 0.6,
+                rotY: 0.4,
+                colors: [0, 1, 1],
               },
-              {
-                isCorrect: false,
-                root: {
-                  w: 46,
-                  h: 80,
-                  color: 0,
-                  children: [
-                    { edge: "left", w: 46, h: 80, color: 0, foldAngle: 120 },
-                    { edge: "right", w: 46, h: 80, color: 0, foldAngle: -120 },
-                    {
-                      edge: "top",
-                      w: 46,
-                      h: 46,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "rectangle",
-                    },
-                    {
-                      edge: "bottom",
-                      w: 46,
-                      h: 46,
-                      color: 1,
-                      foldAngle: -90,
-                      shape: "rectangle",
-                    },
-                  ],
+              nets: [
+                { isCorrect: true, ...this.generatePyramidNet("correct") },
+                {
+                  isCorrect: false,
+                  ...this.generatePyramidNet("overlap-caps"),
                 },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 46,
-                  h: 80,
-                  color: 0,
-                  children: [
-                    { edge: "left", w: 46, h: 80, color: 0, foldAngle: 120 },
-                    {
-                      edge: "right",
-                      w: 46,
-                      h: 80,
-                      color: 0,
-                      foldAngle: -120,
-                      children: [
-                        {
-                          edge: "top",
-                          w: 46,
-                          h: 40,
-                          color: 1,
-                          foldAngle: 90,
-                          shape: "triangle-up",
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 46,
-                      h: 40,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "triangle-up",
-                    },
-                  ],
+                { isCorrect: false, ...this.generatePyramidNet("missing-cap") },
+                {
+                  isCorrect: false,
+                  root: {
+                    w: 40,
+                    h: 40,
+                    color: 0,
+                    children: [
+                      {
+                        edge: "top",
+                        w: 40,
+                        h: 50,
+                        color: 0,
+                        shape: "triangle-up",
+                        foldAngle: 113.6,
+                      },
+                      {
+                        edge: "bottom",
+                        w: 40,
+                        h: 50,
+                        color: 0,
+                        shape: "triangle-down",
+                        foldAngle: -113.6,
+                      },
+                      {
+                        edge: "left",
+                        w: 50,
+                        h: 40,
+                        color: 0,
+                        shape: "triangle-left",
+                        foldAngle: 113.6,
+                      },
+                      {
+                        edge: "right",
+                        w: 50,
+                        h: 40,
+                        color: 0,
+                        shape: "triangle-right",
+                        foldAngle: -113.6,
+                      },
+                    ],
+                  },
                 },
+              ],
+            };
+          }
+        },
+
+        tier3: function () {
+          const isHex = Math.random() > 0.5;
+          if (isHex) {
+            const t1 = Math.floor(Math.random() * 6);
+            const b1 = Math.floor(Math.random() * 6);
+            return {
+              id: "hex_prism",
+              threeDProps: {
+                type: "prism",
+                sides: 6,
+                radius: 0.75,
+                d: 1.75,
+                rotX: 0.3,
+                rotY: 0.5,
+                colors: [0, 1, 1],
               },
-              {
-                isCorrect: false,
-                root: {
-                  w: 46,
-                  h: 80,
-                  color: 0,
-                  children: [
-                    { edge: "left", w: 46, h: 80, color: 0, foldAngle: 120 },
-                    {
-                      edge: "right",
-                      w: 46,
-                      h: 80,
-                      color: 0,
-                      foldAngle: -120,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 46,
-                          h: 80,
-                          color: 0,
-                          foldAngle: -120,
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 46,
-                      h: 40,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "triangle-up",
-                    },
-                    {
-                      edge: "bottom",
-                      w: 46,
-                      h: 40,
-                      color: 1,
-                      foldAngle: -90,
-                      shape: "triangle-down",
-                    },
-                  ],
+              nets: [
+                {
+                  isCorrect: true,
+                  ...this.generatePrismNet(
+                    6,
+                    30,
+                    70,
+                    60,
+                    52,
+                    "hexagon",
+                    t1,
+                    b1,
+                    "correct",
+                  ),
                 },
-              },
-            ],
-          },
-          {
-            // SQUARE PYRAMID
-            id: "sq_pyramid",
-            threeDProps: {
-              type: "pyramid",
-              sides: 4,
-              radius: 0.707,
-              d: 1.145,
-              rotX: 0.6,
-              rotY: 0.4,
-              colors: [0, 1, 1],
-            },
-            nets: [
-              {
-                isCorrect: true,
-                root: {
-                  w: 40,
-                  h: 40,
-                  color: 1,
-                  children: [
-                    {
-                      edge: "top",
-                      w: 40,
-                      h: 50,
-                      color: 0,
-                      shape: "triangle-up",
-                      foldAngle: 113.6,
-                    },
-                    {
-                      edge: "bottom",
-                      w: 40,
-                      h: 50,
-                      color: 0,
-                      shape: "triangle-down",
-                      foldAngle: -113.6,
-                    },
-                    {
-                      edge: "left",
-                      w: 50,
-                      h: 40,
-                      color: 0,
-                      shape: "triangle-left",
-                      foldAngle: 113.6,
-                    },
-                    {
-                      edge: "right",
-                      w: 50,
-                      h: 40,
-                      color: 0,
-                      shape: "triangle-right",
-                      foldAngle: -113.6,
-                    },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    6,
+                    30,
+                    70,
+                    60,
+                    52,
+                    "hexagon",
+                    t1,
+                    b1,
+                    "overlap-caps",
+                  ),
                 },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 40,
-                  h: 40,
-                  color: 1,
-                  children: [
-                    {
-                      edge: "top",
-                      w: 40,
-                      h: 50,
-                      color: 0,
-                      shape: "triangle-up",
-                      foldAngle: 113.6,
-                    },
-                    {
-                      edge: "top",
-                      w: 40,
-                      h: 50,
-                      color: 0,
-                      shape: "triangle-up",
-                      foldAngle: 113.6,
-                    },
-                    {
-                      edge: "left",
-                      w: 50,
-                      h: 40,
-                      color: 0,
-                      shape: "triangle-left",
-                      foldAngle: 113.6,
-                    },
-                    {
-                      edge: "right",
-                      w: 50,
-                      h: 40,
-                      color: 0,
-                      shape: "triangle-right",
-                      foldAngle: -113.6,
-                    },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    6,
+                    30,
+                    70,
+                    60,
+                    52,
+                    "hexagon",
+                    t1,
+                    b1,
+                    "missing-cap",
+                  ),
                 },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 40,
-                  h: 40,
-                  color: 1,
-                  children: [
-                    {
-                      edge: "top",
-                      w: 40,
-                      h: 50,
-                      color: 0,
-                      shape: "triangle-up",
-                      foldAngle: 113.6,
-                    },
-                    {
-                      edge: "bottom",
-                      w: 40,
-                      h: 50,
-                      color: 0,
-                      shape: "triangle-down",
-                      foldAngle: -113.6,
-                    },
-                    {
-                      edge: "right",
-                      w: 50,
-                      h: 40,
-                      color: 0,
-                      shape: "triangle-right",
-                      foldAngle: -113.6,
-                    },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    6,
+                    30,
+                    70,
+                    60,
+                    52,
+                    "hexagon",
+                    t1,
+                    b1,
+                    "extra-side",
+                  ),
                 },
+              ],
+            };
+          } else {
+            const t1 = Math.floor(Math.random() * 5);
+            const b1 = Math.floor(Math.random() * 5);
+            return {
+              id: "pent_prism",
+              threeDProps: {
+                type: "prism",
+                sides: 5,
+                radius: 0.6375,
+                d: 1.75,
+                rotX: 0.4,
+                rotY: 0.6,
+                colors: [0, 1, 1],
               },
-              {
-                isCorrect: false,
-                root: {
-                  w: 40,
-                  h: 40,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "top",
-                      w: 40,
-                      h: 50,
-                      color: 0,
-                      shape: "triangle-up",
-                      foldAngle: 113.6,
-                    },
-                    {
-                      edge: "bottom",
-                      w: 40,
-                      h: 50,
-                      color: 0,
-                      shape: "triangle-down",
-                      foldAngle: -113.6,
-                    },
-                    {
-                      edge: "left",
-                      w: 50,
-                      h: 40,
-                      color: 0,
-                      shape: "triangle-left",
-                      foldAngle: 113.6,
-                    },
-                    {
-                      edge: "right",
-                      w: 50,
-                      h: 40,
-                      color: 0,
-                      shape: "triangle-right",
-                      foldAngle: -113.6,
-                    },
-                  ],
+              nets: [
+                {
+                  isCorrect: true,
+                  ...this.generatePrismNet(
+                    5,
+                    30,
+                    70,
+                    48,
+                    46,
+                    "pentagon",
+                    t1,
+                    b1,
+                    "correct",
+                  ),
                 },
-              },
-            ],
-          },
-        ],
-        tier3: [
-          {
-            // HEXAGONAL PRISM
-            id: "hex_prism",
-            threeDProps: {
-              type: "prism",
-              sides: 6,
-              radius: 0.75,
-              d: 1.75,
-              rotX: 0.3,
-              rotY: 0.5,
-              colors: [0, 1, 1],
-            },
-            nets: [
-              {
-                isCorrect: true,
-                root: {
-                  w: 30,
-                  h: 70,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 30,
-                      h: 70,
-                      color: 0,
-                      foldAngle: -60,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 30,
-                          h: 70,
-                          color: 0,
-                          foldAngle: -60,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 30,
-                              h: 70,
-                              color: 0,
-                              foldAngle: -60,
-                              children: [
-                                {
-                                  edge: "right",
-                                  w: 30,
-                                  h: 70,
-                                  color: 0,
-                                  foldAngle: -60,
-                                  children: [
-                                    {
-                                      edge: "right",
-                                      w: 30,
-                                      h: 70,
-                                      color: 0,
-                                      foldAngle: -60,
-                                    },
-                                  ],
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 60,
-                      h: 52,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "hexagon",
-                    },
-                    {
-                      edge: "bottom",
-                      w: 60,
-                      h: 52,
-                      color: 1,
-                      foldAngle: -90,
-                      shape: "hexagon",
-                    },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    5,
+                    30,
+                    70,
+                    48,
+                    46,
+                    "pentagon",
+                    t1,
+                    b1,
+                    "overlap-caps",
+                  ),
                 },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 30,
-                  h: 70,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 30,
-                      h: 70,
-                      color: 0,
-                      foldAngle: -60,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 30,
-                          h: 70,
-                          color: 0,
-                          foldAngle: -60,
-                          children: [
-                            {
-                              edge: "top",
-                              w: 60,
-                              h: 52,
-                              color: 1,
-                              foldAngle: 90,
-                              shape: "hexagon",
-                            },
-                            {
-                              edge: "right",
-                              w: 30,
-                              h: 70,
-                              color: 0,
-                              foldAngle: -60,
-                              children: [
-                                {
-                                  edge: "right",
-                                  w: 30,
-                                  h: 70,
-                                  color: 0,
-                                  foldAngle: -60,
-                                  children: [
-                                    {
-                                      edge: "right",
-                                      w: 30,
-                                      h: 70,
-                                      color: 0,
-                                      foldAngle: -60,
-                                    },
-                                  ],
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 60,
-                      h: 52,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "hexagon",
-                    },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    5,
+                    30,
+                    70,
+                    48,
+                    46,
+                    "pentagon",
+                    t1,
+                    b1,
+                    "missing-cap",
+                  ),
                 },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 30,
-                  h: 70,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 30,
-                      h: 70,
-                      color: 0,
-                      foldAngle: -60,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 30,
-                          h: 70,
-                          color: 0,
-                          foldAngle: -60,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 30,
-                              h: 70,
-                              color: 0,
-                              foldAngle: -60,
-                              children: [
-                                {
-                                  edge: "right",
-                                  w: 30,
-                                  h: 70,
-                                  color: 0,
-                                  foldAngle: -60,
-                                  children: [
-                                    {
-                                      edge: "right",
-                                      w: 30,
-                                      h: 70,
-                                      color: 0,
-                                      foldAngle: -60,
-                                      children: [
-                                        {
-                                          edge: "right",
-                                          w: 30,
-                                          h: 70,
-                                          color: 0,
-                                          foldAngle: -60,
-                                        },
-                                      ],
-                                    },
-                                  ],
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 60,
-                      h: 52,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "hexagon",
-                    },
-                    {
-                      edge: "bottom",
-                      w: 60,
-                      h: 52,
-                      color: 1,
-                      foldAngle: -90,
-                      shape: "hexagon",
-                    },
-                  ],
+                {
+                  isCorrect: false,
+                  ...this.generatePrismNet(
+                    5,
+                    30,
+                    70,
+                    48,
+                    46,
+                    "pentagon",
+                    t1,
+                    b1,
+                    "extra-side",
+                  ),
                 },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 30,
-                  h: 70,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 30,
-                      h: 70,
-                      color: 0,
-                      foldAngle: -60,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 30,
-                          h: 70,
-                          color: 0,
-                          foldAngle: -60,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 30,
-                              h: 70,
-                              color: 0,
-                              foldAngle: -60,
-                              children: [
-                                {
-                                  edge: "right",
-                                  w: 30,
-                                  h: 70,
-                                  color: 0,
-                                  foldAngle: -60,
-                                  children: [
-                                    {
-                                      edge: "right",
-                                      w: 30,
-                                      h: 70,
-                                      color: 0,
-                                      foldAngle: -60,
-                                    },
-                                  ],
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      edge: "bottom",
-                      w: 60,
-                      h: 52,
-                      color: 1,
-                      foldAngle: -90,
-                      shape: "hexagon",
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-          {
-            // PENTAGONAL PRISM
-            id: "pent_prism",
-            threeDProps: {
-              type: "prism",
-              sides: 5,
-              radius: 0.6375,
-              d: 1.75,
-              rotX: 0.4,
-              rotY: 0.6,
-              colors: [0, 1, 1],
-            },
-            nets: [
-              {
-                isCorrect: true,
-                root: {
-                  w: 30,
-                  h: 70,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 30,
-                      h: 70,
-                      color: 0,
-                      foldAngle: -72,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 30,
-                          h: 70,
-                          color: 0,
-                          foldAngle: -72,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 30,
-                              h: 70,
-                              color: 0,
-                              foldAngle: -72,
-                              children: [
-                                {
-                                  edge: "right",
-                                  w: 30,
-                                  h: 70,
-                                  color: 0,
-                                  foldAngle: -72,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 48,
-                      h: 46,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "pentagon",
-                    },
-                    {
-                      edge: "bottom",
-                      w: 48,
-                      h: 46,
-                      color: 1,
-                      foldAngle: -90,
-                      shape: "pentagon-down",
-                    },
-                  ],
-                },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 30,
-                  h: 70,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 30,
-                      h: 70,
-                      color: 0,
-                      foldAngle: -72,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 30,
-                          h: 70,
-                          color: 0,
-                          foldAngle: -72,
-                          children: [
-                            {
-                              edge: "top",
-                              w: 48,
-                              h: 46,
-                              color: 1,
-                              foldAngle: 90,
-                              shape: "pentagon",
-                            },
-                            {
-                              edge: "right",
-                              w: 30,
-                              h: 70,
-                              color: 0,
-                              foldAngle: -72,
-                              children: [
-                                {
-                                  edge: "right",
-                                  w: 30,
-                                  h: 70,
-                                  color: 0,
-                                  foldAngle: -72,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 48,
-                      h: 46,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "pentagon",
-                    },
-                  ],
-                },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 30,
-                  h: 70,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 30,
-                      h: 70,
-                      color: 0,
-                      foldAngle: -72,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 30,
-                          h: 70,
-                          color: 0,
-                          foldAngle: -72,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 30,
-                              h: 70,
-                              color: 0,
-                              foldAngle: -72,
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 48,
-                      h: 46,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "pentagon",
-                    },
-                    {
-                      edge: "bottom",
-                      w: 48,
-                      h: 46,
-                      color: 1,
-                      foldAngle: -90,
-                      shape: "pentagon-down",
-                    },
-                  ],
-                },
-              },
-              {
-                isCorrect: false,
-                root: {
-                  w: 30,
-                  h: 70,
-                  color: 0,
-                  children: [
-                    {
-                      edge: "right",
-                      w: 30,
-                      h: 70,
-                      color: 0,
-                      foldAngle: -72,
-                      children: [
-                        {
-                          edge: "right",
-                          w: 30,
-                          h: 70,
-                          color: 0,
-                          foldAngle: -72,
-                          children: [
-                            {
-                              edge: "right",
-                              w: 30,
-                              h: 70,
-                              color: 0,
-                              foldAngle: -72,
-                              children: [
-                                {
-                                  edge: "right",
-                                  w: 30,
-                                  h: 70,
-                                  color: 0,
-                                  foldAngle: -72,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      edge: "top",
-                      w: 48,
-                      h: 46,
-                      color: 1,
-                      foldAngle: 90,
-                      shape: "pentagon",
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-        ],
+              ],
+            };
+          }
+        },
       };
 
       // --- Game State ---
@@ -1429,10 +824,11 @@
         document.getElementById("winScreen").classList.add("hidden");
         currentLevelNum = 0;
 
+        // Dynamically generate 3 brand new levels every single game
         levelQueue = [
-          levelTiers.tier1[Math.floor(Math.random() * levelTiers.tier1.length)],
-          levelTiers.tier2[Math.floor(Math.random() * levelTiers.tier2.length)],
-          levelTiers.tier3[Math.floor(Math.random() * levelTiers.tier3.length)],
+          NetGenerator.tier1(),
+          NetGenerator.tier2(),
+          NetGenerator.tier3(),
         ];
         loadLevel();
       }
@@ -1462,7 +858,6 @@
         dirLight.position.set(5, 10, 7);
         threeScene.add(dirLight);
 
-        // Left Pane Controls (Target) - Auto Rotation enabled
         threeControls = new THREE.OrbitControls(
           threeCamera,
           threeRenderer.domElement,
@@ -1486,7 +881,6 @@
         });
         animContainer.appendChild(animRenderer.domElement);
 
-        // Right Pane Controls (Animation)
         animControls = new THREE.OrbitControls(
           animCamera,
           animRenderer.domElement,
@@ -1520,18 +914,14 @@
 
             foldingHinges.forEach((hinge) => {
               const data = hinge.userData;
-
               if (now >= data.startTime) {
-                // Slow, deliberate lerp speed
                 data.currentAngle +=
                   (data.targetAngle - data.currentAngle) * 0.02;
-
                 if (Math.abs(data.targetAngle - data.currentAngle) > 0.01) {
                   allFolded = false;
                 } else {
                   data.currentAngle = data.targetAngle;
                 }
-
                 if (data.axis === "x") hinge.rotation.x = data.currentAngle;
                 if (data.axis === "y") hinge.rotation.y = data.currentAngle;
               } else {
@@ -2030,6 +1420,11 @@
         if (animControls) animControls.enabled = true;
 
         if (selectedData.isCorrect) {
+          // Calculate true 3D bounding box of folded shape to center it
+          const box = new THREE.Box3().setFromObject(animGroup);
+          const center = new THREE.Vector3();
+          box.getCenter(center);
+
           // ZOOM TO FULL RIGHT PANE!
           const animCenter = document.getElementById("animationCenter");
           const animContainer = document.getElementById("threeAnimContainer");
@@ -2046,7 +1441,11 @@
           animCamera.aspect = rect.width / rect.height;
           animCamera.updateProjectionMatrix();
           animRenderer.setSize(rect.width, rect.height);
-          animCamera.position.set(0, 0, 10); // zoom out for larger view
+
+          // Perfectly frame the folded shape's true center
+          animCamera.position.set(center.x, center.y, center.z + 10);
+          animControls.target.copy(center);
+          animControls.update();
 
           // Animate zoom
           animCenter.classList.remove("opacity-0", "pointer-events-none");
