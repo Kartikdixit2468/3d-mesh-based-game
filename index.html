@@ -1,860 +1,2199 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>3D Net Folding Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        /* CSS 3D Engine Essentials */
-        .scene {
-            perspective: 1200px;
-            transform-style: preserve-3d;
-        }
-        
-        .net-container {
-            transform-style: preserve-3d;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg); 
-            transition: opacity 0.3s;
-        }
+      /* CSS 3D Engine Essentials */
+      .scene {
+        perspective: 1200px;
+        transform-style: preserve-3d;
+      }
 
-        .face {
-            position: absolute;
-            transform-style: preserve-3d;
-            box-sizing: border-box;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.15);
-        }
+      .net-container {
+        transform-style: preserve-3d;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg);
+        transition: opacity 0.3s;
+      }
 
-        .face.shape-rectangle { border: 1px solid rgba(0, 0, 0, 0.4); }
+      .face {
+        position: absolute;
+        transform-style: preserve-3d;
+        box-sizing: border-box;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.15);
+      }
 
-        /* Custom Polygon shapes for 2D Grid */
-        .face.shape-triangle-up { clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
-        .face.shape-triangle-down { clip-path: polygon(0% 0%, 100% 0%, 50% 100%); }
-        .face.shape-triangle-left { clip-path: polygon(100% 0%, 100% 100%, 0% 50%); }
-        .face.shape-triangle-right { clip-path: polygon(0% 0%, 0% 100%, 100% 50%); }
-        .face.shape-hexagon { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
-        .face.shape-pentagon { clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); }
-        .face.shape-pentagon-down { clip-path: polygon(50% 100%, 100% 62%, 82% 0%, 18% 0%, 0% 62%); }
+      .face.shape-rectangle {
+        border: 1px solid rgba(0, 0, 0, 0.4);
+      }
 
-        /* Blueprint grid background */
-        .blueprint-grid {
-            background-color: #7dd3fc;
-            background-image: 
-                linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px);
-            background-size: 20px 20px;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.1);
-            transition: opacity 0.5s ease;
-        }
+      /* Custom Polygon shapes for 2D Grid */
+      .face.shape-triangle-up {
+        clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+      }
+      .face.shape-triangle-down {
+        clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+      }
+      .face.shape-triangle-left {
+        clip-path: polygon(100% 0%, 100% 100%, 0% 50%);
+      }
+      .face.shape-triangle-right {
+        clip-path: polygon(0% 0%, 0% 100%, 100% 50%);
+      }
+      .face.shape-hexagon {
+        clip-path: polygon(
+          25% 0%,
+          75% 0%,
+          100% 50%,
+          75% 100%,
+          25% 100%,
+          0% 50%
+        );
+      }
+      .face.shape-pentagon {
+        clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+      }
+      .face.shape-pentagon-down {
+        clip-path: polygon(50% 100%, 100% 62%, 82% 0%, 18% 0%, 0% 62%);
+      }
 
-        .target-bg { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+      /* Blueprint grid background */
+      .blueprint-grid {
+        background-color: #7dd3fc;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
+        background-size: 20px 20px;
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.1);
+        transition: opacity 0.5s ease;
+      }
 
-        .option-wrapper { 
-            transition: transform 0.2s, opacity 0.3s; 
-            border: 4px solid transparent; /* Placeholder for layout */
+      .target-bg {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      }
+
+      .option-wrapper {
+        transition:
+          transform 0.2s,
+          opacity 0.3s;
+        border: 4px solid transparent;
+      }
+      .option-wrapper:hover {
+        transform: scale(1.02);
+      }
+
+      /* Fully Transparent Selection */
+      .option-wrapper.selected {
+        background-color: transparent;
+        border: 4px dashed #3b82f6;
+        border-radius: 12px;
+      }
+      .option-wrapper.disabled {
+        opacity: 0.3;
+        pointer-events: none;
+        filter: grayscale(100%);
+      }
+
+      /* Success Zoom Animation */
+      @keyframes popOut {
+        0% {
+          transform: scale(0.5);
+          opacity: 0;
         }
-        .option-wrapper:hover { transform: scale(1.02); }
-        .option-wrapper.selected {
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 4px dashed #3b82f6; /* Transparent dashed selection */
-            border-radius: 12px;
+        80% {
+          transform: scale(1.05);
+          opacity: 1;
         }
-        .option-wrapper.disabled {
-            opacity: 0.3;
-            pointer-events: none;
-            filter: grayscale(100%);
+        100% {
+          transform: scale(1);
+          opacity: 1;
         }
+      }
+      .pop-out {
+        animation: popOut 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      }
     </style>
-</head>
-<body class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col font-sans select-none">
-
-    <canvas id="confettiCanvas" class="absolute inset-0 pointer-events-none z-50"></canvas>
+  </head>
+  <body
+    class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col font-sans select-none"
+  >
+    <canvas
+      id="confettiCanvas"
+      class="absolute inset-0 pointer-events-none z-50"
+    ></canvas>
 
     <!-- Modern Win Modal -->
-    <div id="winScreen" class="absolute inset-0 bg-gray-900/60 z-40 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-500">
-        <div class="bg-white rounded-3xl p-10 max-w-md w-full shadow-2xl text-center flex flex-col items-center border border-gray-100">
-            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <h1 class="text-4xl font-black mb-2 text-gray-800">You Nailed It!</h1>
-            <p class="text-lg text-gray-500 mb-8">You successfully folded all the 3D shapes. Great spatial thinking!</p>
-            <button onclick="startGame()" class="w-full bg-yellow-400 text-yellow-900 py-4 rounded-xl font-bold text-xl uppercase tracking-wider shadow-md hover:bg-yellow-300 hover:shadow-lg transition-all active:scale-95">
-                Play Again
-            </button>
+    <div
+      id="winScreen"
+      class="absolute inset-0 bg-gray-900/60 z-40 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-500"
+    >
+      <div
+        class="bg-white rounded-3xl p-10 max-w-md w-full shadow-2xl text-center flex flex-col items-center border border-gray-100"
+      >
+        <div
+          class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner"
+        >
+          <svg
+            class="w-12 h-12 text-green-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="3"
+              d="M5 13l4 4L19 7"
+            ></path>
+          </svg>
         </div>
+        <h1 class="text-4xl font-black mb-2 text-gray-800">You Nailed It!</h1>
+        <p class="text-lg text-gray-500 mb-8">
+          You successfully folded all the 3D shapes. Great spatial thinking!
+        </p>
+        <button
+          onclick="startGame()"
+          class="w-full bg-yellow-400 text-yellow-900 py-4 rounded-xl font-bold text-xl uppercase tracking-wider shadow-md hover:bg-yellow-300 hover:shadow-lg transition-all active:scale-95"
+        >
+          Play Again
+        </button>
+      </div>
     </div>
 
-    <!-- Floating Anim Container (appended to selected cells dynamically) -->
-    <div id="threeAnimContainer" class="absolute inset-0 z-10 hidden cursor-move rounded-lg"></div>
+    <!-- Floating Anim Elements (safely stashed in body until needed) -->
+    <div
+      id="threeAnimContainer"
+      class="absolute inset-0 z-10 hidden cursor-move rounded-lg"
+    ></div>
+    <div
+      id="animDragText"
+      class="hidden absolute top-4 left-0 w-full text-center text-sm font-bold text-gray-700 opacity-80 pointer-events-none z-20"
+    >
+      Drag to rotate folded shape
+    </div>
+    <button
+      id="inlineDoneBtn"
+      class="hidden absolute bottom-3 right-3 bg-yellow-400 text-gray-900 px-5 py-2 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer"
+    >
+      DONE
+    </button>
 
     <!-- Main Game Area -->
-    <div class="flex-1 flex w-full max-w-6xl mx-auto my-4 bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative">
-        <div class="w-1/3 target-bg relative flex flex-col items-center justify-center border-r-4 border-white cursor-move" id="targetPane">
-            <h2 class="absolute top-6 w-full text-center text-3xl font-black text-gray-800/80 z-10 drop-shadow-sm pointer-events-none">Target Shape</h2>
-            <div id="threeContainer" class="absolute inset-0"></div>
-            <div class="absolute bottom-4 left-0 w-full text-center text-sm font-bold text-gray-700 opacity-60 pointer-events-none">Drag to inspect</div>
+    <div
+      class="flex-1 flex w-full max-w-6xl mx-auto my-4 bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative"
+    >
+      <!-- Left Pane -->
+      <div
+        class="w-1/3 target-bg relative flex flex-col items-center justify-center border-r-4 border-white cursor-move"
+        id="targetPane"
+      >
+        <h2
+          class="absolute top-6 w-full text-center text-3xl font-black text-gray-800/80 z-10 drop-shadow-sm pointer-events-none"
+        >
+          Target Shape
+        </h2>
+        <div id="threeContainer" class="absolute inset-0"></div>
+        <div
+          class="absolute bottom-4 left-0 w-full text-center text-sm font-bold text-gray-700 opacity-60 pointer-events-none"
+        >
+          Auto-rotating (Drag to inspect)
         </div>
+      </div>
 
-        <div class="w-2/3 p-4 bg-gray-300 relative overflow-hidden flex flex-col">
-            <h2 class="text-3xl font-black text-gray-800/80 mb-4 z-10 text-center pointer-events-none drop-shadow-sm">Choose the correct Net</h2>
-            <div class="w-full flex-1 blueprint-grid rounded-lg p-4 grid grid-cols-2 grid-rows-2 gap-4 relative" id="optionsGrid"></div>
+      <!-- Right Pane -->
+      <div
+        class="w-2/3 p-4 bg-gray-300 relative overflow-hidden flex flex-col"
+        id="rightPane"
+      >
+        <h2
+          class="text-3xl font-black text-gray-800/80 mb-4 z-10 text-center pointer-events-none drop-shadow-sm"
+        >
+          Choose the correct Net
+        </h2>
+
+        <div
+          class="w-full flex-1 blueprint-grid rounded-lg p-4 grid grid-cols-2 grid-rows-2 gap-4 relative"
+          id="optionsGrid"
+        ></div>
+
+        <!-- Full Screen Overlay (for correct answer zoom) -->
+        <div
+          id="animationCenter"
+          class="absolute inset-0 pointer-events-none hidden items-center justify-center transition-opacity duration-500 z-30 rounded-xl m-4 bg-white/90 backdrop-blur-sm shadow-2xl border-4 border-green-400"
+        >
+          <!-- Content injected here on success -->
         </div>
+      </div>
     </div>
 
-    <!-- Bottom Action Bar (Simplified) -->
-    <div class="h-16 bg-gray-800 text-white flex items-center justify-center px-8 shadow-inner shrink-0 relative">
-        <div class="absolute left-8 flex items-center gap-4">
-            <span id="levelIndicator" class="bg-gray-700 px-3 py-1 rounded text-sm font-bold text-gray-300 shadow-inner">Level 1</span>
-        </div>
-        <div class="text-xl font-medium tracking-wide flex items-center gap-4">
-            <span id="statusText">Choose the correct net.</span>
-        </div>
+    <!-- Bottom Action Bar -->
+    <div
+      class="h-16 bg-gray-800 text-white flex items-center justify-center px-8 shadow-inner shrink-0 relative"
+    >
+      <div class="absolute left-8 flex items-center gap-4">
+        <span
+          id="levelIndicator"
+          class="bg-gray-700 px-3 py-1 rounded text-sm font-bold text-gray-300 shadow-inner"
+          >Level 1</span
+        >
+      </div>
+      <div class="text-xl font-medium tracking-wide flex items-center gap-4">
+        <span id="statusText">Choose the correct net.</span>
+      </div>
     </div>
-
-    <!-- Hidden Inline Done Button (appended to selected cell) -->
-    <button id="inlineDoneBtn" class="hidden absolute bottom-3 right-3 bg-yellow-400 text-gray-900 px-5 py-2 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer">DONE</button>
 
     <script>
-        // --- HIGH CONTRAST Dynamic Color Palette ---
-        const PALETTE = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#f97316', '#ec4899', '#14b8a6'];
+      // --- HIGH CONTRAST Dynamic Color Palette ---
+      const PALETTE = [
+        "#ef4444",
+        "#3b82f6",
+        "#22c55e",
+        "#eab308",
+        "#a855f7",
+        "#f97316",
+        "#ec4899",
+        "#14b8a6",
+      ];
 
-        // --- Level Data Architecture ---
-        const levelTiers = {
-            tier1: [ 
-                {   // CUBE
-                    id: 'cube',
-                    threeDProps: { type: 'box', w: 1.5, h: 1.5, d: 1.5, rotX: 0.5, rotY: -0.6, colors: [1, 1, 2, 2, 0, 0] },
-                    nets: [
-                        { isCorrect: true, root: { w: 60, h: 60, color: 0, children: [
-                            { edge: 'right', w: 60, h: 60, color: 1, foldAngle: -90, children: [
-                                { edge: 'right', w: 60, h: 60, color: 0, foldAngle: -90, children: [
-                                    { edge: 'right', w: 60, h: 60, color: 1, foldAngle: -90 }
-                                ]}
-                            ]},
-                            { edge: 'top', w: 60, h: 60, color: 2, foldAngle: 90 }, 
-                            { edge: 'bottom', w: 60, h: 60, color: 2, foldAngle: -90 }
-                        ]}},
-                        { isCorrect: false, root: { w: 60, h: 60, color: 0, children: [
-                            { edge: 'right', w: 60, h: 60, color: 1, foldAngle: -90, children: [
-                                { edge: 'right', w: 60, h: 60, color: 0, foldAngle: -90, children: [
-                                    { edge: 'right', w: 60, h: 60, color: 1, foldAngle: -90 }
-                                ]}
-                            ]},
-                            { edge: 'top', w: 60, h: 60, color: 0, foldAngle: 90 }, // Wrong Color
-                            { edge: 'bottom', w: 60, h: 60, color: 2, foldAngle: -90 }
-                        ]}}, 
-                        { isCorrect: false, root: { w: 60, h: 60, color: 0, children: [
-                            { edge: 'right', w: 60, h: 60, color: 1, foldAngle: -90 },
-                            { edge: 'top', w: 60, h: 60, color: 2, foldAngle: 90, children: [ 
-                                { edge: 'right', w: 60, h: 60, color: 0, foldAngle: -90 } 
-                            ]},
-                            { edge: 'bottom', w: 60, h: 60, color: 2, foldAngle: -90 }, 
-                            { edge: 'left', w: 60, h: 60, color: 1, foldAngle: 90 }
-                        ]}}, 
-                        { isCorrect: false, root: { w: 60, h: 60, color: 0, children: [
-                            { edge: 'right', w: 60, h: 60, color: 1, foldAngle: -90 }, 
-                            { edge: 'top', w: 60, h: 60, color: 2, foldAngle: 90 },
-                            { edge: 'bottom', w: 60, h: 60, color: 2, foldAngle: -90 }, 
-                            { edge: 'left', w: 60, h: 60, color: 1, foldAngle: 90 }
-                        ]}}
-                    ]
+      // --- Level Data Architecture ---
+      const levelTiers = {
+        tier1: [
+          {
+            // CUBE
+            id: "cube",
+            threeDProps: {
+              type: "box",
+              w: 1.5,
+              h: 1.5,
+              d: 1.5,
+              rotX: 0.5,
+              rotY: -0.6,
+              colors: [1, 1, 2, 2, 0, 0],
+            },
+            nets: [
+              {
+                isCorrect: true,
+                root: {
+                  w: 60,
+                  h: 60,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 60,
+                      h: 60,
+                      color: 1,
+                      foldAngle: -90,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 60,
+                          h: 60,
+                          color: 0,
+                          foldAngle: -90,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 60,
+                              h: 60,
+                              color: 1,
+                              foldAngle: -90,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    { edge: "top", w: 60, h: 60, color: 2, foldAngle: 90 },
+                    { edge: "bottom", w: 60, h: 60, color: 2, foldAngle: -90 },
+                  ],
                 },
-                {   // CUBOID
-                    id: 'cuboid',
-                    threeDProps: { type: 'box', w: 1, h: 2, d: 1, rotX: 0.4, rotY: -0.5, colors: [1, 1, 2, 2, 0, 0] },
-                    nets: [
-                        { isCorrect: true, root: { w: 40, h: 80, color: 0, children: [
-                            { edge: 'right', w: 40, h: 80, color: 1, foldAngle: -90, children: [
-                                { edge: 'right', w: 40, h: 80, color: 0, foldAngle: -90, children: [
-                                    { edge: 'right', w: 40, h: 80, color: 1, foldAngle: -90 }
-                                ]}
-                            ]},
-                            { edge: 'top', w: 40, h: 40, color: 2, foldAngle: 90 }, 
-                            { edge: 'bottom', w: 40, h: 40, color: 2, foldAngle: -90 }
-                        ]}},
-                        { isCorrect: false, root: { w: 40, h: 80, color: 0, children: [
-                            { edge: 'right', w: 40, h: 80, color: 1, foldAngle: -90, children: [
-                                { edge: 'right', w: 40, h: 80, color: 0, foldAngle: -90 }, 
-                                { edge: 'top', w: 40, h: 40, color: 2, foldAngle: 90 }
-                            ]},
-                            { edge: 'top', w: 40, h: 40, color: 2, foldAngle: 90 }, 
-                            { edge: 'left', w: 40, h: 80, color: 1, foldAngle: 90 }
-                        ]}},
-                        { isCorrect: false, root: { w: 40, h: 80, color: 0, children: [
-                            { edge: 'right', w: 40, h: 80, color: 1, foldAngle: -90, children: [
-                                { edge: 'top', w: 40, h: 40, color: 2, foldAngle: 90 }, 
-                                { edge: 'bottom', w: 40, h: 40, color: 2, foldAngle: -90 }
-                            ]},
-                            { edge: 'left', w: 40, h: 80, color: 1, foldAngle: 90 }
-                        ]}}, 
-                        { isCorrect: false, root: { w: 40, h: 80, color: 0, children: [
-                            { edge: 'right', w: 40, h: 80, color: 1, foldAngle: -90, children: [
-                                { edge: 'right', w: 40, h: 80, color: 0, foldAngle: -90 },
-                                { edge: 'right', w: 40, h: 40, color: 2, foldAngle: -90 }, 
-                                { edge: 'bottom', w: 40, h: 40, color: 2, foldAngle: -90 }
-                            ]},
-                            { edge: 'left', w: 40, h: 80, color: 1, foldAngle: 90 }
-                        ]}}
-                    ]
-                }
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 60,
+                  h: 60,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 60,
+                      h: 60,
+                      color: 1,
+                      foldAngle: -90,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 60,
+                          h: 60,
+                          color: 0,
+                          foldAngle: -90,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 60,
+                              h: 60,
+                              color: 1,
+                              foldAngle: -90,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    { edge: "top", w: 60, h: 60, color: 0, foldAngle: 90 },
+                    { edge: "bottom", w: 60, h: 60, color: 2, foldAngle: -90 },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 60,
+                  h: 60,
+                  color: 0,
+                  children: [
+                    { edge: "right", w: 60, h: 60, color: 1, foldAngle: -90 },
+                    {
+                      edge: "top",
+                      w: 60,
+                      h: 60,
+                      color: 2,
+                      foldAngle: 90,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 60,
+                          h: 60,
+                          color: 0,
+                          foldAngle: -90,
+                        },
+                      ],
+                    },
+                    { edge: "bottom", w: 60, h: 60, color: 2, foldAngle: -90 },
+                    { edge: "left", w: 60, h: 60, color: 1, foldAngle: 90 },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 60,
+                  h: 60,
+                  color: 0,
+                  children: [
+                    { edge: "right", w: 60, h: 60, color: 1, foldAngle: -90 },
+                    { edge: "top", w: 60, h: 60, color: 2, foldAngle: 90 },
+                    { edge: "bottom", w: 60, h: 60, color: 2, foldAngle: -90 },
+                    { edge: "left", w: 60, h: 60, color: 1, foldAngle: 90 },
+                  ],
+                },
+              },
             ],
-            tier2: [ 
-                {   // TRIANGULAR PRISM
-                    id: 'tri_prism',
-                    threeDProps: { type: 'prism', sides: 3, radius: 0.664, d: 2, rotX: -0.3, rotY: -0.8, colors: [0, 1, 1] }, 
-                    nets: [
-                        { isCorrect: true, root: { w: 46, h: 80, color: 0, children: [
-                            { edge: 'left', w: 46, h: 80, color: 0, foldAngle: 120 }, 
-                            { edge: 'right', w: 46, h: 80, color: 0, foldAngle: -120 },
-                            { edge: 'top', w: 46, h: 40, color: 1, foldAngle: 90, shape: 'triangle-up' },
-                            { edge: 'bottom', w: 46, h: 40, color: 1, foldAngle: -90, shape: 'triangle-down' }
-                        ]}},
-                        { isCorrect: false, root: { w: 46, h: 80, color: 0, children: [
-                            { edge: 'left', w: 46, h: 80, color: 0, foldAngle: 120 }, 
-                            { edge: 'right', w: 46, h: 80, color: 0, foldAngle: -120 },
-                            { edge: 'top', w: 46, h: 46, color: 1, foldAngle: 90, shape: 'rectangle' }, 
-                            { edge: 'bottom', w: 46, h: 46, color: 1, foldAngle: -90, shape: 'rectangle' }
-                        ]}},
-                        { isCorrect: false, root: { w: 46, h: 80, color: 0, children: [
-                            { edge: 'left', w: 46, h: 80, color: 0, foldAngle: 120 },
-                            { edge: 'right', w: 46, h: 80, color: 0, foldAngle: -120, children: [ { edge: 'top', w: 46, h: 40, color: 1, foldAngle: 90, shape: 'triangle-up' } ]},
-                            { edge: 'top', w: 46, h: 40, color: 1, foldAngle: 90, shape: 'triangle-up' }
-                        ]}},
-                        { isCorrect: false, root: { w: 46, h: 80, color: 0, children: [
-                            { edge: 'left', w: 46, h: 80, color: 0, foldAngle: 120 },
-                            { edge: 'right', w: 46, h: 80, color: 0, foldAngle: -120, children:[ { edge: 'right', w: 46, h: 80, color: 0, foldAngle: -120 } ]},
-                            { edge: 'top', w: 46, h: 40, color: 1, foldAngle: 90, shape: 'triangle-up' }, 
-                            { edge: 'bottom', w: 46, h: 40, color: 1, foldAngle: -90, shape: 'triangle-down' }
-                        ]}}
-                    ]
+          },
+          {
+            // CUBOID
+            id: "cuboid",
+            threeDProps: {
+              type: "box",
+              w: 1,
+              h: 2,
+              d: 1,
+              rotX: 0.4,
+              rotY: -0.5,
+              colors: [1, 1, 2, 2, 0, 0],
+            },
+            nets: [
+              {
+                isCorrect: true,
+                root: {
+                  w: 40,
+                  h: 80,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 40,
+                      h: 80,
+                      color: 1,
+                      foldAngle: -90,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 40,
+                          h: 80,
+                          color: 0,
+                          foldAngle: -90,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 40,
+                              h: 80,
+                              color: 1,
+                              foldAngle: -90,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    { edge: "top", w: 40, h: 40, color: 2, foldAngle: 90 },
+                    { edge: "bottom", w: 40, h: 40, color: 2, foldAngle: -90 },
+                  ],
                 },
-                {   // SQUARE PYRAMID
-                    id: 'sq_pyramid',
-                    threeDProps: { type: 'pyramid', sides: 4, radius: 0.707, d: 1.145, rotX: 0.6, rotY: 0.4, colors: [0, 1, 1] },
-                    nets: [
-                        { isCorrect: true, root: { w: 40, h: 40, color: 1, children: [
-                            { edge: 'top', w: 40, h: 50, color: 0, shape: 'triangle-up', foldAngle: 113.6 },
-                            { edge: 'bottom', w: 40, h: 50, color: 0, shape: 'triangle-down', foldAngle: -113.6 },
-                            { edge: 'left', w: 50, h: 40, color: 0, shape: 'triangle-left', foldAngle: 113.6 },
-                            { edge: 'right', w: 50, h: 40, color: 0, shape: 'triangle-right', foldAngle: -113.6 }
-                        ]}},
-                        { isCorrect: false, root: { w: 40, h: 40, color: 1, children: [
-                            { edge: 'top', w: 40, h: 50, color: 0, shape: 'triangle-up', foldAngle: 113.6 },
-                            { edge: 'top', w: 40, h: 50, color: 0, shape: 'triangle-up', foldAngle: 113.6 },
-                            { edge: 'left', w: 50, h: 40, color: 0, shape: 'triangle-left', foldAngle: 113.6 },
-                            { edge: 'right', w: 50, h: 40, color: 0, shape: 'triangle-right', foldAngle: -113.6 }
-                        ]}},
-                        { isCorrect: false, root: { w: 40, h: 40, color: 1, children: [
-                            { edge: 'top', w: 40, h: 50, color: 0, shape: 'triangle-up', foldAngle: 113.6 },
-                            { edge: 'bottom', w: 40, h: 50, color: 0, shape: 'triangle-down', foldAngle: -113.6 },
-                            { edge: 'right', w: 50, h: 40, color: 0, shape: 'triangle-right', foldAngle: -113.6 }
-                        ]}},
-                        { isCorrect: false, root: { w: 40, h: 40, color: 0, children: [ 
-                            { edge: 'top', w: 40, h: 50, color: 0, shape: 'triangle-up', foldAngle: 113.6 },
-                            { edge: 'bottom', w: 40, h: 50, color: 0, shape: 'triangle-down', foldAngle: -113.6 },
-                            { edge: 'left', w: 50, h: 40, color: 0, shape: 'triangle-left', foldAngle: 113.6 },
-                            { edge: 'right', w: 50, h: 40, color: 0, shape: 'triangle-right', foldAngle: -113.6 }
-                        ]}}
-                    ]
-                }
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 40,
+                  h: 80,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 40,
+                      h: 80,
+                      color: 1,
+                      foldAngle: -90,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 40,
+                          h: 80,
+                          color: 0,
+                          foldAngle: -90,
+                        },
+                        { edge: "top", w: 40, h: 40, color: 2, foldAngle: 90 },
+                      ],
+                    },
+                    { edge: "top", w: 40, h: 40, color: 2, foldAngle: 90 },
+                    { edge: "left", w: 40, h: 80, color: 1, foldAngle: 90 },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 40,
+                  h: 80,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 40,
+                      h: 80,
+                      color: 1,
+                      foldAngle: -90,
+                      children: [
+                        { edge: "top", w: 40, h: 40, color: 2, foldAngle: 90 },
+                        {
+                          edge: "bottom",
+                          w: 40,
+                          h: 40,
+                          color: 2,
+                          foldAngle: -90,
+                        },
+                      ],
+                    },
+                    { edge: "left", w: 40, h: 80, color: 1, foldAngle: 90 },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 40,
+                  h: 80,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 40,
+                      h: 80,
+                      color: 1,
+                      foldAngle: -90,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 40,
+                          h: 80,
+                          color: 0,
+                          foldAngle: -90,
+                        },
+                        {
+                          edge: "right",
+                          w: 40,
+                          h: 40,
+                          color: 2,
+                          foldAngle: -90,
+                        },
+                        {
+                          edge: "bottom",
+                          w: 40,
+                          h: 40,
+                          color: 2,
+                          foldAngle: -90,
+                        },
+                      ],
+                    },
+                    { edge: "left", w: 40, h: 80, color: 1, foldAngle: 90 },
+                  ],
+                },
+              },
             ],
-            tier3: [
-                {   // HEXAGONAL PRISM
-                    id: 'hex_prism',
-                    threeDProps: { type: 'prism', sides: 6, radius: 0.75, d: 1.75, rotX: 0.3, rotY: 0.5, colors: [0, 1, 1] },
-                    nets: [
-                        { isCorrect: true, root: { w: 30, h: 70, color: 0, children: [
-                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                    { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                        { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60 }
-                                        ]}
-                                    ]}
-                                ]}
-                            ]},
-                            { edge: 'top', w: 60, h: 52, color: 1, foldAngle: 90, shape: 'hexagon' },
-                            { edge: 'bottom', w: 60, h: 52, color: 1, foldAngle: -90, shape: 'hexagon' }
-                        ]}},
-                        { isCorrect: false, root: { w: 30, h: 70, color: 0, children: [
-                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                    { edge: 'top', w: 60, h: 52, color: 1, foldAngle: 90, shape: 'hexagon' },
-                                    { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                        { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60 }
-                                        ]}
-                                    ]}
-                                ]}
-                            ]},
-                            { edge: 'top', w: 60, h: 52, color: 1, foldAngle: 90, shape: 'hexagon' }
-                        ]}},
-                        { isCorrect: false, root: { w: 30, h: 70, color: 0, children: [
-                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                    { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                        { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60 }
-                                            ]}
-                                        ]}
-                                    ]}
-                                ]}
-                            ]},
-                            { edge: 'top', w: 60, h: 52, color: 1, foldAngle: 90, shape: 'hexagon' },
-                            { edge: 'bottom', w: 60, h: 52, color: 1, foldAngle: -90, shape: 'hexagon' }
-                        ]}},
-                        { isCorrect: false, root: { w: 30, h: 70, color: 0, children: [
-                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                    { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                        { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60, children: [
-                                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -60 }
-                                        ]}
-                                    ]}
-                                ]}
-                            ]},
-                            { edge: 'bottom', w: 60, h: 52, color: 1, foldAngle: -90, shape: 'hexagon' }
-                        ]}}
-                    ]
+          },
+        ],
+        tier2: [
+          {
+            // TRIANGULAR PRISM
+            id: "tri_prism",
+            threeDProps: {
+              type: "prism",
+              sides: 3,
+              radius: 0.664,
+              d: 2,
+              rotX: -0.3,
+              rotY: -0.8,
+              colors: [0, 1, 1],
+            },
+            nets: [
+              {
+                isCorrect: true,
+                root: {
+                  w: 46,
+                  h: 80,
+                  color: 0,
+                  children: [
+                    { edge: "left", w: 46, h: 80, color: 0, foldAngle: 120 },
+                    { edge: "right", w: 46, h: 80, color: 0, foldAngle: -120 },
+                    {
+                      edge: "top",
+                      w: 46,
+                      h: 40,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "triangle-up",
+                    },
+                    {
+                      edge: "bottom",
+                      w: 46,
+                      h: 40,
+                      color: 1,
+                      foldAngle: -90,
+                      shape: "triangle-down",
+                    },
+                  ],
                 },
-                {   // PENTAGONAL PRISM
-                    id: 'pent_prism',
-                    threeDProps: { type: 'prism', sides: 5, radius: 0.6375, d: 1.75, rotX: 0.4, rotY: 0.6, colors: [0, 1, 1] },
-                    nets: [
-                        { isCorrect: true, root: { w: 30, h: 70, color: 0, children: [
-                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                    { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                        { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72 }
-                                    ]}
-                                ]}
-                            ]},
-                            { edge: 'top', w: 48, h: 46, color: 1, foldAngle: 90, shape: 'pentagon' },
-                            { edge: 'bottom', w: 48, h: 46, color: 1, foldAngle: -90, shape: 'pentagon-down' }
-                        ]}},
-                        { isCorrect: false, root: { w: 30, h: 70, color: 0, children: [
-                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                    { edge: 'top', w: 48, h: 46, color: 1, foldAngle: 90, shape: 'pentagon' },
-                                    { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                        { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72 }
-                                    ]}
-                                ]}
-                            ]},
-                            { edge: 'top', w: 48, h: 46, color: 1, foldAngle: 90, shape: 'pentagon' }
-                        ]}},
-                        { isCorrect: false, root: { w: 30, h: 70, color: 0, children: [
-                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                    { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72 }
-                                ]}
-                            ]}, 
-                            { edge: 'top', w: 48, h: 46, color: 1, foldAngle: 90, shape: 'pentagon' },
-                            { edge: 'bottom', w: 48, h: 46, color: 1, foldAngle: -90, shape: 'pentagon-down' }
-                        ]}},
-                        { isCorrect: false, root: { w: 30, h: 70, color: 0, children: [
-                            { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                    { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72, children: [
-                                        { edge: 'right', w: 30, h: 70, color: 0, foldAngle: -72 }
-                                    ]}
-                                ]}
-                            ]},
-                            { edge: 'top', w: 48, h: 46, color: 1, foldAngle: 90, shape: 'pentagon' }
-                        ]}}
-                    ]
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 46,
+                  h: 80,
+                  color: 0,
+                  children: [
+                    { edge: "left", w: 46, h: 80, color: 0, foldAngle: 120 },
+                    { edge: "right", w: 46, h: 80, color: 0, foldAngle: -120 },
+                    {
+                      edge: "top",
+                      w: 46,
+                      h: 46,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "rectangle",
+                    },
+                    {
+                      edge: "bottom",
+                      w: 46,
+                      h: 46,
+                      color: 1,
+                      foldAngle: -90,
+                      shape: "rectangle",
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 46,
+                  h: 80,
+                  color: 0,
+                  children: [
+                    { edge: "left", w: 46, h: 80, color: 0, foldAngle: 120 },
+                    {
+                      edge: "right",
+                      w: 46,
+                      h: 80,
+                      color: 0,
+                      foldAngle: -120,
+                      children: [
+                        {
+                          edge: "top",
+                          w: 46,
+                          h: 40,
+                          color: 1,
+                          foldAngle: 90,
+                          shape: "triangle-up",
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 46,
+                      h: 40,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "triangle-up",
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 46,
+                  h: 80,
+                  color: 0,
+                  children: [
+                    { edge: "left", w: 46, h: 80, color: 0, foldAngle: 120 },
+                    {
+                      edge: "right",
+                      w: 46,
+                      h: 80,
+                      color: 0,
+                      foldAngle: -120,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 46,
+                          h: 80,
+                          color: 0,
+                          foldAngle: -120,
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 46,
+                      h: 40,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "triangle-up",
+                    },
+                    {
+                      edge: "bottom",
+                      w: 46,
+                      h: 40,
+                      color: 1,
+                      foldAngle: -90,
+                      shape: "triangle-down",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            // SQUARE PYRAMID
+            id: "sq_pyramid",
+            threeDProps: {
+              type: "pyramid",
+              sides: 4,
+              radius: 0.707,
+              d: 1.145,
+              rotX: 0.6,
+              rotY: 0.4,
+              colors: [0, 1, 1],
+            },
+            nets: [
+              {
+                isCorrect: true,
+                root: {
+                  w: 40,
+                  h: 40,
+                  color: 1,
+                  children: [
+                    {
+                      edge: "top",
+                      w: 40,
+                      h: 50,
+                      color: 0,
+                      shape: "triangle-up",
+                      foldAngle: 113.6,
+                    },
+                    {
+                      edge: "bottom",
+                      w: 40,
+                      h: 50,
+                      color: 0,
+                      shape: "triangle-down",
+                      foldAngle: -113.6,
+                    },
+                    {
+                      edge: "left",
+                      w: 50,
+                      h: 40,
+                      color: 0,
+                      shape: "triangle-left",
+                      foldAngle: 113.6,
+                    },
+                    {
+                      edge: "right",
+                      w: 50,
+                      h: 40,
+                      color: 0,
+                      shape: "triangle-right",
+                      foldAngle: -113.6,
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 40,
+                  h: 40,
+                  color: 1,
+                  children: [
+                    {
+                      edge: "top",
+                      w: 40,
+                      h: 50,
+                      color: 0,
+                      shape: "triangle-up",
+                      foldAngle: 113.6,
+                    },
+                    {
+                      edge: "top",
+                      w: 40,
+                      h: 50,
+                      color: 0,
+                      shape: "triangle-up",
+                      foldAngle: 113.6,
+                    },
+                    {
+                      edge: "left",
+                      w: 50,
+                      h: 40,
+                      color: 0,
+                      shape: "triangle-left",
+                      foldAngle: 113.6,
+                    },
+                    {
+                      edge: "right",
+                      w: 50,
+                      h: 40,
+                      color: 0,
+                      shape: "triangle-right",
+                      foldAngle: -113.6,
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 40,
+                  h: 40,
+                  color: 1,
+                  children: [
+                    {
+                      edge: "top",
+                      w: 40,
+                      h: 50,
+                      color: 0,
+                      shape: "triangle-up",
+                      foldAngle: 113.6,
+                    },
+                    {
+                      edge: "bottom",
+                      w: 40,
+                      h: 50,
+                      color: 0,
+                      shape: "triangle-down",
+                      foldAngle: -113.6,
+                    },
+                    {
+                      edge: "right",
+                      w: 50,
+                      h: 40,
+                      color: 0,
+                      shape: "triangle-right",
+                      foldAngle: -113.6,
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 40,
+                  h: 40,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "top",
+                      w: 40,
+                      h: 50,
+                      color: 0,
+                      shape: "triangle-up",
+                      foldAngle: 113.6,
+                    },
+                    {
+                      edge: "bottom",
+                      w: 40,
+                      h: 50,
+                      color: 0,
+                      shape: "triangle-down",
+                      foldAngle: -113.6,
+                    },
+                    {
+                      edge: "left",
+                      w: 50,
+                      h: 40,
+                      color: 0,
+                      shape: "triangle-left",
+                      foldAngle: 113.6,
+                    },
+                    {
+                      edge: "right",
+                      w: 50,
+                      h: 40,
+                      color: 0,
+                      shape: "triangle-right",
+                      foldAngle: -113.6,
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+        tier3: [
+          {
+            // HEXAGONAL PRISM
+            id: "hex_prism",
+            threeDProps: {
+              type: "prism",
+              sides: 6,
+              radius: 0.75,
+              d: 1.75,
+              rotX: 0.3,
+              rotY: 0.5,
+              colors: [0, 1, 1],
+            },
+            nets: [
+              {
+                isCorrect: true,
+                root: {
+                  w: 30,
+                  h: 70,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 30,
+                      h: 70,
+                      color: 0,
+                      foldAngle: -60,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 30,
+                          h: 70,
+                          color: 0,
+                          foldAngle: -60,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 30,
+                              h: 70,
+                              color: 0,
+                              foldAngle: -60,
+                              children: [
+                                {
+                                  edge: "right",
+                                  w: 30,
+                                  h: 70,
+                                  color: 0,
+                                  foldAngle: -60,
+                                  children: [
+                                    {
+                                      edge: "right",
+                                      w: 30,
+                                      h: 70,
+                                      color: 0,
+                                      foldAngle: -60,
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 60,
+                      h: 52,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "hexagon",
+                    },
+                    {
+                      edge: "bottom",
+                      w: 60,
+                      h: 52,
+                      color: 1,
+                      foldAngle: -90,
+                      shape: "hexagon",
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 30,
+                  h: 70,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 30,
+                      h: 70,
+                      color: 0,
+                      foldAngle: -60,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 30,
+                          h: 70,
+                          color: 0,
+                          foldAngle: -60,
+                          children: [
+                            {
+                              edge: "top",
+                              w: 60,
+                              h: 52,
+                              color: 1,
+                              foldAngle: 90,
+                              shape: "hexagon",
+                            },
+                            {
+                              edge: "right",
+                              w: 30,
+                              h: 70,
+                              color: 0,
+                              foldAngle: -60,
+                              children: [
+                                {
+                                  edge: "right",
+                                  w: 30,
+                                  h: 70,
+                                  color: 0,
+                                  foldAngle: -60,
+                                  children: [
+                                    {
+                                      edge: "right",
+                                      w: 30,
+                                      h: 70,
+                                      color: 0,
+                                      foldAngle: -60,
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 60,
+                      h: 52,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "hexagon",
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 30,
+                  h: 70,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 30,
+                      h: 70,
+                      color: 0,
+                      foldAngle: -60,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 30,
+                          h: 70,
+                          color: 0,
+                          foldAngle: -60,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 30,
+                              h: 70,
+                              color: 0,
+                              foldAngle: -60,
+                              children: [
+                                {
+                                  edge: "right",
+                                  w: 30,
+                                  h: 70,
+                                  color: 0,
+                                  foldAngle: -60,
+                                  children: [
+                                    {
+                                      edge: "right",
+                                      w: 30,
+                                      h: 70,
+                                      color: 0,
+                                      foldAngle: -60,
+                                      children: [
+                                        {
+                                          edge: "right",
+                                          w: 30,
+                                          h: 70,
+                                          color: 0,
+                                          foldAngle: -60,
+                                        },
+                                      ],
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 60,
+                      h: 52,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "hexagon",
+                    },
+                    {
+                      edge: "bottom",
+                      w: 60,
+                      h: 52,
+                      color: 1,
+                      foldAngle: -90,
+                      shape: "hexagon",
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 30,
+                  h: 70,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 30,
+                      h: 70,
+                      color: 0,
+                      foldAngle: -60,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 30,
+                          h: 70,
+                          color: 0,
+                          foldAngle: -60,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 30,
+                              h: 70,
+                              color: 0,
+                              foldAngle: -60,
+                              children: [
+                                {
+                                  edge: "right",
+                                  w: 30,
+                                  h: 70,
+                                  color: 0,
+                                  foldAngle: -60,
+                                  children: [
+                                    {
+                                      edge: "right",
+                                      w: 30,
+                                      h: 70,
+                                      color: 0,
+                                      foldAngle: -60,
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      edge: "bottom",
+                      w: 60,
+                      h: 52,
+                      color: 1,
+                      foldAngle: -90,
+                      shape: "hexagon",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            // PENTAGONAL PRISM
+            id: "pent_prism",
+            threeDProps: {
+              type: "prism",
+              sides: 5,
+              radius: 0.6375,
+              d: 1.75,
+              rotX: 0.4,
+              rotY: 0.6,
+              colors: [0, 1, 1],
+            },
+            nets: [
+              {
+                isCorrect: true,
+                root: {
+                  w: 30,
+                  h: 70,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 30,
+                      h: 70,
+                      color: 0,
+                      foldAngle: -72,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 30,
+                          h: 70,
+                          color: 0,
+                          foldAngle: -72,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 30,
+                              h: 70,
+                              color: 0,
+                              foldAngle: -72,
+                              children: [
+                                {
+                                  edge: "right",
+                                  w: 30,
+                                  h: 70,
+                                  color: 0,
+                                  foldAngle: -72,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 48,
+                      h: 46,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "pentagon",
+                    },
+                    {
+                      edge: "bottom",
+                      w: 48,
+                      h: 46,
+                      color: 1,
+                      foldAngle: -90,
+                      shape: "pentagon-down",
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 30,
+                  h: 70,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 30,
+                      h: 70,
+                      color: 0,
+                      foldAngle: -72,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 30,
+                          h: 70,
+                          color: 0,
+                          foldAngle: -72,
+                          children: [
+                            {
+                              edge: "top",
+                              w: 48,
+                              h: 46,
+                              color: 1,
+                              foldAngle: 90,
+                              shape: "pentagon",
+                            },
+                            {
+                              edge: "right",
+                              w: 30,
+                              h: 70,
+                              color: 0,
+                              foldAngle: -72,
+                              children: [
+                                {
+                                  edge: "right",
+                                  w: 30,
+                                  h: 70,
+                                  color: 0,
+                                  foldAngle: -72,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 48,
+                      h: 46,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "pentagon",
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 30,
+                  h: 70,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 30,
+                      h: 70,
+                      color: 0,
+                      foldAngle: -72,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 30,
+                          h: 70,
+                          color: 0,
+                          foldAngle: -72,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 30,
+                              h: 70,
+                              color: 0,
+                              foldAngle: -72,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 48,
+                      h: 46,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "pentagon",
+                    },
+                    {
+                      edge: "bottom",
+                      w: 48,
+                      h: 46,
+                      color: 1,
+                      foldAngle: -90,
+                      shape: "pentagon-down",
+                    },
+                  ],
+                },
+              },
+              {
+                isCorrect: false,
+                root: {
+                  w: 30,
+                  h: 70,
+                  color: 0,
+                  children: [
+                    {
+                      edge: "right",
+                      w: 30,
+                      h: 70,
+                      color: 0,
+                      foldAngle: -72,
+                      children: [
+                        {
+                          edge: "right",
+                          w: 30,
+                          h: 70,
+                          color: 0,
+                          foldAngle: -72,
+                          children: [
+                            {
+                              edge: "right",
+                              w: 30,
+                              h: 70,
+                              color: 0,
+                              foldAngle: -72,
+                              children: [
+                                {
+                                  edge: "right",
+                                  w: 30,
+                                  h: 70,
+                                  color: 0,
+                                  foldAngle: -72,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      edge: "top",
+                      w: 48,
+                      h: 46,
+                      color: 1,
+                      foldAngle: 90,
+                      shape: "pentagon",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      // --- Game State ---
+      let maxLevels = 3;
+      let currentLevelNum = 0;
+      let levelQueue = [];
+      let selectedNetIndex = null;
+      let currentLevelData = null;
+      let gameState = "selecting";
+
+      // --- Three.js Variables ---
+      let threeScene, threeCamera, threeRenderer, threeControls, targetMesh;
+      let animScene, animCamera, animRenderer, animGroup, animControls;
+      let foldingHinges = [];
+      let isFolding = false,
+        isRotatingGroup = false;
+
+      // --- Initialization ---
+      function startGame() {
+        document.getElementById("winScreen").classList.add("hidden");
+        currentLevelNum = 0;
+
+        levelQueue = [
+          levelTiers.tier1[Math.floor(Math.random() * levelTiers.tier1.length)],
+          levelTiers.tier2[Math.floor(Math.random() * levelTiers.tier2.length)],
+          levelTiers.tier3[Math.floor(Math.random() * levelTiers.tier3.length)],
+        ];
+        loadLevel();
+      }
+
+      // --- Three.js Engine Setup ---
+      function initThreeJS() {
+        const container = document.getElementById("threeContainer");
+        threeScene = new THREE.Scene();
+        threeCamera = new THREE.PerspectiveCamera(
+          45,
+          container.clientWidth / container.clientHeight,
+          0.1,
+          1000,
+        );
+        threeCamera.position.set(3, 4, 5);
+
+        threeRenderer = new THREE.WebGLRenderer({
+          alpha: true,
+          antialias: true,
+        });
+        threeRenderer.setSize(container.clientWidth, container.clientHeight);
+        threeRenderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(threeRenderer.domElement);
+
+        threeScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(5, 10, 7);
+        threeScene.add(dirLight);
+
+        // Left Pane Controls (Target) - Auto Rotation enabled
+        threeControls = new THREE.OrbitControls(
+          threeCamera,
+          threeRenderer.domElement,
+        );
+        threeControls.enableDamping = true;
+        threeControls.dampingFactor = 0.05;
+        threeControls.enableZoom = true;
+        threeControls.minDistance = 2;
+        threeControls.maxDistance = 15;
+        threeControls.autoRotate = true;
+        threeControls.autoRotateSpeed = 2.0;
+
+        const animContainer = document.getElementById("threeAnimContainer");
+        animScene = new THREE.Scene();
+        animCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+        animCamera.position.set(0, 0, 7);
+
+        animRenderer = new THREE.WebGLRenderer({
+          alpha: true,
+          antialias: true,
+        });
+        animContainer.appendChild(animRenderer.domElement);
+
+        // Right Pane Controls (Animation)
+        animControls = new THREE.OrbitControls(
+          animCamera,
+          animRenderer.domElement,
+        );
+        animControls.enableDamping = true;
+        animControls.dampingFactor = 0.05;
+        animControls.enableZoom = true;
+        animControls.minDistance = 2;
+        animControls.maxDistance = 15;
+        animControls.enabled = false;
+
+        animScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const animLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
+        animLight2.position.set(5, 10, 7);
+        animScene.add(animLight2);
+
+        animateThreeJS();
+      }
+
+      function animateThreeJS() {
+        requestAnimationFrame(animateThreeJS);
+        if (threeControls) threeControls.update();
+        if (animControls) animControls.update();
+        if (threeRenderer && threeScene)
+          threeRenderer.render(threeScene, threeCamera);
+
+        if (animRenderer && animScene) {
+          if (isFolding) {
+            let allFolded = true;
+            const now = performance.now();
+
+            foldingHinges.forEach((hinge) => {
+              const data = hinge.userData;
+
+              if (now >= data.startTime) {
+                // Slow, deliberate lerp speed
+                data.currentAngle +=
+                  (data.targetAngle - data.currentAngle) * 0.02;
+
+                if (Math.abs(data.targetAngle - data.currentAngle) > 0.01) {
+                  allFolded = false;
+                } else {
+                  data.currentAngle = data.targetAngle;
                 }
-            ]
-        };
 
-        // --- Game State ---
-        let maxLevels = 3;
-        let currentLevelNum = 0;
-        let levelQueue = [];
-        let selectedNetIndex = null;
-        let currentLevelData = null;
-        let gameState = 'selecting';
+                if (data.axis === "x") hinge.rotation.x = data.currentAngle;
+                if (data.axis === "y") hinge.rotation.y = data.currentAngle;
+              } else {
+                allFolded = false;
+              }
+            });
 
-        // --- Three.js Variables ---
-        let threeScene, threeCamera, threeRenderer, threeControls, targetMesh;
-        let animScene, animCamera, animRenderer, animGroup, animControls;
-        let foldingHinges = [];
-        let isFolding = false, isRotatingGroup = false;
+            if (allFolded && foldingHinges.length > 0) {
+              isFolding = false;
+              setTimeout(() => {
+                isRotatingGroup = true;
+                setTimeout(() => finalizeEvaluation(), 800);
+              }, 200);
+            } else if (allFolded && foldingHinges.length === 0) {
+              isFolding = false;
+              isRotatingGroup = true;
+              setTimeout(() => finalizeEvaluation(), 800);
+            }
+          }
 
-        // --- Initialization ---
-        function startGame() {
-            document.getElementById('winScreen').classList.add('hidden');
-            currentLevelNum = 0;
-            
-            levelQueue = [
-                levelTiers.tier1[Math.floor(Math.random() * levelTiers.tier1.length)],
-                levelTiers.tier2[Math.floor(Math.random() * levelTiers.tier2.length)],
-                levelTiers.tier3[Math.floor(Math.random() * levelTiers.tier3.length)]
-            ];
-            loadLevel();
+          if (isRotatingGroup && animGroup && currentLevelData) {
+            animGroup.rotation.x +=
+              (currentLevelData.threeDProps.rotX - animGroup.rotation.x) * 0.05;
+            animGroup.rotation.y +=
+              (currentLevelData.threeDProps.rotY - animGroup.rotation.y) * 0.05;
+          }
+          animRenderer.render(animScene, animCamera);
+        }
+      }
+
+      window.addEventListener("resize", () => {
+        const container = document.getElementById("threeContainer");
+        if (container && container.clientWidth > 0 && threeCamera) {
+          threeCamera.aspect = container.clientWidth / container.clientHeight;
+          threeCamera.updateProjectionMatrix();
+          threeRenderer.setSize(container.clientWidth, container.clientHeight);
         }
 
-        // --- Three.js Engine Setup ---
-        function initThreeJS() {
-            const container = document.getElementById('threeContainer');
-            threeScene = new THREE.Scene();
-            threeCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            threeCamera.position.set(3, 4, 5);
-            
-            threeRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            threeRenderer.setSize(container.clientWidth, container.clientHeight);
-            threeRenderer.setPixelRatio(window.devicePixelRatio);
-            container.appendChild(threeRenderer.domElement);
-            
-            threeScene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            dirLight.position.set(5, 10, 7);
-            threeScene.add(dirLight);
+        const animContainer = document.getElementById("threeAnimContainer");
+        if (
+          animContainer &&
+          !animContainer.classList.contains("hidden") &&
+          animContainer.parentElement &&
+          animCamera
+        ) {
+          const rect = animContainer.parentElement.getBoundingClientRect();
+          animCamera.aspect = rect.width / rect.height;
+          animCamera.updateProjectionMatrix();
+          animRenderer.setSize(rect.width, rect.height);
+        }
+      });
 
-            // Left Pane Controls (Target) - Auto Rotation enabled
-            threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
-            threeControls.enableDamping = true;
-            threeControls.dampingFactor = 0.05;
-            threeControls.enableZoom = true;
-            threeControls.minDistance = 2;
-            threeControls.maxDistance = 15;
-            threeControls.autoRotate = true;     
-            threeControls.autoRotateSpeed = 2.0;
+      // --- Engine: Calculate Geometric Bounds ---
+      function getNetBounds(node, offsetX = 0, offsetY = 0) {
+        let minX = offsetX,
+          maxX = offsetX + node.w;
+        let minY = offsetY,
+          maxY = offsetY + node.h;
 
-            const animContainer = document.getElementById('threeAnimContainer');
-            animScene = new THREE.Scene();
-            animCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-            animCamera.position.set(0, 0, 7); // Closer for the smaller grid cell
-            
-            animRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            animContainer.appendChild(animRenderer.domElement);
+        if (node.children) {
+          node.children.forEach((c) => {
+            let childX = offsetX;
+            let childY = offsetY;
+            if (c.edge === "right") {
+              childX += node.w;
+              childY += (node.h - c.h) / 2;
+            }
+            if (c.edge === "left") {
+              childX -= c.w;
+              childY += (node.h - c.h) / 2;
+            }
+            if (c.edge === "top") {
+              childY -= c.h;
+              childX += (node.w - c.w) / 2;
+            }
+            if (c.edge === "bottom") {
+              childY += node.h;
+              childX += (node.w - c.w) / 2;
+            }
 
-            // Right Pane Controls (Animation)
-            animControls = new THREE.OrbitControls(animCamera, animRenderer.domElement);
-            animControls.enableDamping = true;
-            animControls.dampingFactor = 0.05;
-            animControls.enableZoom = true;
-            animControls.minDistance = 2;
-            animControls.maxDistance = 15;
-            animControls.enabled = false; 
+            const bounds = getNetBounds(c, childX, childY);
+            minX = Math.min(minX, bounds.minX);
+            maxX = Math.max(maxX, bounds.maxX);
+            minY = Math.min(minY, bounds.minY);
+            maxY = Math.max(maxY, bounds.maxY);
+          });
+        }
+        return { minX, maxX, minY, maxY };
+      }
 
-            animScene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const animLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
-            animLight2.position.set(5, 10, 7);
-            animScene.add(animLight2);
+      // --- Engine: Build 2D HTML Structure ---
+      function buildNetDOM(node, isRoot = true) {
+        const el = document.createElement("div");
+        el.className = `face shape-${node.shape || "rectangle"}`;
+        el.style.width = node.w + "px";
+        el.style.height = node.h + "px";
+        el.style.backgroundColor = node.color;
 
-            animateThreeJS();
+        if (!isRoot) {
+          if (node.edge === "right") {
+            el.style.left = "100%";
+            el.style.top = `calc(50% - ${node.h / 2}px)`;
+            el.style.transformOrigin = "left center";
+          } else if (node.edge === "left") {
+            el.style.right = "100%";
+            el.style.top = `calc(50% - ${node.h / 2}px)`;
+            el.style.transformOrigin = "right center";
+          } else if (node.edge === "top") {
+            el.style.bottom = "100%";
+            el.style.left = `calc(50% - ${node.w / 2}px)`;
+            el.style.transformOrigin = "center bottom";
+          } else if (node.edge === "bottom") {
+            el.style.top = "100%";
+            el.style.left = `calc(50% - ${node.w / 2}px)`;
+            el.style.transformOrigin = "center top";
+          }
         }
 
-        function animateThreeJS() {
-            requestAnimationFrame(animateThreeJS);
-            if(threeControls) threeControls.update();
-            if(animControls) animControls.update();
-            if(threeRenderer && threeScene) threeRenderer.render(threeScene, threeCamera);
+        if (node.children)
+          node.children.forEach((c) => el.appendChild(buildNetDOM(c, false)));
+        return el;
+      }
 
-            if(animRenderer && animScene) {
-                if (isFolding) {
-                    foldingHinges.forEach(hinge => {
-                        const data = hinge.userData;
-                        data.currentAngle += (data.targetAngle - data.currentAngle) * 0.06;
-                        if (data.axis === 'x') hinge.rotation.x = data.currentAngle;
-                        if (data.axis === 'y') hinge.rotation.y = data.currentAngle;
-                    });
-                }
-                if (isRotatingGroup && animGroup && currentLevelData) {
-                    animGroup.rotation.x += (currentLevelData.threeDProps.rotX - animGroup.rotation.x) * 0.05;
-                    animGroup.rotation.y += (currentLevelData.threeDProps.rotY - animGroup.rotation.y) * 0.05;
-                }
-                animRenderer.render(animScene, animCamera);
-            }
+      // --- Engine: Build 3D WebGL Structure ---
+      function buildThreeJsNet(node, isRoot = true) {
+        const SCALE = 40;
+        const w = node.w / SCALE;
+        const h = node.h / SCALE;
+        const hinge = new THREE.Group();
+
+        let geometry;
+        if (node.shape === "triangle-up") {
+          const shape = new THREE.Shape();
+          shape.moveTo(-w / 2, -h / 2);
+          shape.lineTo(w / 2, -h / 2);
+          shape.lineTo(0, h / 2);
+          shape.lineTo(-w / 2, -h / 2);
+          geometry = new THREE.ShapeGeometry(shape);
+        } else if (node.shape === "triangle-down") {
+          const shape = new THREE.Shape();
+          shape.moveTo(-w / 2, h / 2);
+          shape.lineTo(w / 2, h / 2);
+          shape.lineTo(0, -h / 2);
+          shape.lineTo(-w / 2, h / 2);
+          geometry = new THREE.ShapeGeometry(shape);
+        } else if (node.shape === "triangle-left") {
+          const shape = new THREE.Shape();
+          shape.moveTo(w / 2, h / 2);
+          shape.lineTo(w / 2, -h / 2);
+          shape.lineTo(-w / 2, 0);
+          shape.lineTo(w / 2, h / 2);
+          geometry = new THREE.ShapeGeometry(shape);
+        } else if (node.shape === "triangle-right") {
+          const shape = new THREE.Shape();
+          shape.moveTo(-w / 2, h / 2);
+          shape.lineTo(-w / 2, -h / 2);
+          shape.lineTo(w / 2, 0);
+          shape.lineTo(-w / 2, h / 2);
+          geometry = new THREE.ShapeGeometry(shape);
+        } else if (node.shape === "hexagon") {
+          const shape = new THREE.Shape();
+          shape.moveTo(-w / 4, h / 2);
+          shape.lineTo(w / 4, h / 2);
+          shape.lineTo(w / 2, 0);
+          shape.lineTo(w / 4, -h / 2);
+          shape.lineTo(-w / 4, -h / 2);
+          shape.lineTo(-w / 2, 0);
+          shape.lineTo(-w / 4, h / 2);
+          geometry = new THREE.ShapeGeometry(shape);
+        } else if (node.shape === "pentagon") {
+          const shape = new THREE.Shape();
+          shape.moveTo(0, h / 2);
+          shape.lineTo(w / 2, h * 0.12);
+          shape.lineTo(w * 0.32, -h / 2);
+          shape.lineTo(-w * 0.32, -h / 2);
+          shape.lineTo(-w / 2, h * 0.12);
+          shape.lineTo(0, h / 2);
+          geometry = new THREE.ShapeGeometry(shape);
+        } else if (node.shape === "pentagon-down") {
+          const shape = new THREE.Shape();
+          shape.moveTo(0, -h / 2);
+          shape.lineTo(w / 2, -h * 0.12);
+          shape.lineTo(w * 0.32, h / 2);
+          shape.lineTo(-w * 0.32, h / 2);
+          shape.lineTo(-w / 2, -h * 0.12);
+          shape.lineTo(0, -h / 2);
+          geometry = new THREE.ShapeGeometry(shape);
+        } else {
+          geometry = new THREE.PlaneGeometry(w, h);
         }
 
-        window.addEventListener('resize', () => {
-            const container = document.getElementById('threeContainer');
-            if(container && container.clientWidth > 0 && threeCamera) {
-                threeCamera.aspect = container.clientWidth / container.clientHeight;
-                threeCamera.updateProjectionMatrix();
-                threeRenderer.setSize(container.clientWidth, container.clientHeight);
-            }
-            
-            const animContainer = document.getElementById('threeAnimContainer');
-            if(animContainer && !animContainer.classList.contains('hidden') && animContainer.parentElement && animCamera) {
-                const rect = animContainer.parentElement.getBoundingClientRect();
-                animCamera.aspect = rect.width / rect.height;
-                animCamera.updateProjectionMatrix();
-                animRenderer.setSize(rect.width, rect.height);
-            }
+        const material = new THREE.MeshStandardMaterial({
+          color: node.color,
+          side: THREE.DoubleSide,
+          roughness: 0.6,
+          polygonOffset: true,
+          polygonOffsetFactor: 1,
+          polygonOffsetUnits: 1,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.add(
+          new THREE.LineSegments(
+            new THREE.EdgesGeometry(geometry),
+            new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 }),
+          ),
+        );
+
+        if (!isRoot) {
+          if (node.edge === "right") mesh.position.set(w / 2, 0, 0);
+          if (node.edge === "left") mesh.position.set(-w / 2, 0, 0);
+          if (node.edge === "top") mesh.position.set(0, h / 2, 0);
+          if (node.edge === "bottom") mesh.position.set(0, -h / 2, 0);
+        }
+        hinge.add(mesh);
+
+        if (node.foldAngle) {
+          let rad = Math.abs((node.foldAngle * Math.PI) / 180);
+          hinge.userData = {
+            targetAngle:
+              node.edge === "left" || node.edge === "top" ? -rad : rad,
+            currentAngle: 0,
+            axis: ["top", "bottom"].includes(node.edge) ? "x" : "y",
+          };
+          foldingHinges.push(hinge);
+        }
+
+        if (node.children) {
+          node.children.forEach((child) => {
+            const childHinge = buildThreeJsNet(child, false);
+            if (child.edge === "right") childHinge.position.set(w / 2, 0, 0);
+            if (child.edge === "left") childHinge.position.set(-w / 2, 0, 0);
+            if (child.edge === "top") childHinge.position.set(0, h / 2, 0);
+            if (child.edge === "bottom") childHinge.position.set(0, -h / 2, 0);
+            mesh.add(childHinge);
+          });
+        }
+        return hinge;
+      }
+
+      // --- Game Logic ---
+      function loadLevel() {
+        gameState = "selecting";
+        selectedNetIndex = null;
+
+        currentLevelData = JSON.parse(
+          JSON.stringify(levelQueue[currentLevelNum]),
+        );
+        const shuffledPalette = [...PALETTE].sort(() => Math.random() - 0.5);
+        const colorMap = {};
+
+        currentLevelData.threeDProps.colors =
+          currentLevelData.threeDProps.colors.map((cId) => {
+            if (!colorMap[cId]) colorMap[cId] = shuffledPalette.pop();
+            return colorMap[cId];
+          });
+
+        function applyColorMap(node) {
+          if (node.color !== undefined) {
+            if (!colorMap[node.color])
+              colorMap[node.color] = shuffledPalette.pop();
+            node.color = colorMap[node.color];
+          }
+          if (node.children) node.children.forEach(applyColorMap);
+        }
+        currentLevelData.nets.forEach((n) => applyColorMap(n.root));
+
+        document.getElementById("levelIndicator").textContent =
+          `Level ${currentLevelNum + 1}/${maxLevels}`;
+        document.getElementById("statusText").textContent =
+          "Choose the correct net.";
+
+        // Safely stash floating UI elements
+        const inlineBtn = document.getElementById("inlineDoneBtn");
+        inlineBtn.classList.add("hidden");
+        document.body.appendChild(inlineBtn);
+
+        const animContainer = document.getElementById("threeAnimContainer");
+        animContainer.classList.add("hidden");
+        document.body.appendChild(animContainer);
+
+        const dragText = document.getElementById("animDragText");
+        dragText.classList.add("hidden");
+        document.body.appendChild(dragText);
+
+        // Clean up the full-screen zoom container if it was active
+        const animCenter = document.getElementById("animationCenter");
+        animCenter.classList.remove(
+          "pop-out",
+          "pointer-events-auto",
+          "opacity-100",
+        );
+        animCenter.classList.add("hidden", "opacity-0", "pointer-events-none");
+
+        if (animControls) animControls.enabled = false;
+
+        const grid = document.getElementById("optionsGrid");
+        grid.innerHTML = "";
+        grid.style.opacity = "1";
+
+        if (!threeScene) initThreeJS();
+
+        if (targetMesh) {
+          threeScene.remove(targetMesh);
+          targetMesh.geometry.dispose();
+          if (Array.isArray(targetMesh.material))
+            targetMesh.material.forEach((m) => m.dispose());
+          else targetMesh.material.dispose();
+        }
+
+        const props = currentLevelData.threeDProps;
+        let geometry;
+        if (props.type === "box") {
+          geometry = new THREE.BoxGeometry(props.w, props.h, props.d);
+        } else if (props.type === "prism") {
+          geometry = new THREE.CylinderGeometry(
+            props.radius,
+            props.radius,
+            props.d,
+            props.sides,
+          );
+        } else if (props.type === "pyramid") {
+          geometry = new THREE.ConeGeometry(props.radius, props.d, props.sides);
+          geometry.rotateX(Math.PI / 2);
+          geometry.rotateZ(Math.PI / 4);
+        }
+
+        const materials = props.colors.map(
+          (c) =>
+            new THREE.MeshStandardMaterial({
+              color: c,
+              roughness: 0.6,
+              polygonOffset: true,
+              polygonOffsetFactor: 1,
+              polygonOffsetUnits: 1,
+              side: THREE.DoubleSide,
+            }),
+        );
+
+        targetMesh = new THREE.Mesh(geometry, materials);
+        targetMesh.add(
+          new THREE.LineSegments(
+            new THREE.EdgesGeometry(geometry),
+            new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 }),
+          ),
+        );
+        targetMesh.rotation.set(props.rotX, props.rotY, 0);
+        threeScene.add(targetMesh);
+
+        threeCamera.position.set(3, 4, 5);
+        threeControls.target.set(0, 0, 0);
+        threeControls.update();
+
+        const shuffledNets = currentLevelData.nets
+          .map((n, i) => ({ ...n, originalIndex: i }))
+          .sort(() => Math.random() - 0.5);
+
+        shuffledNets.forEach((net) => {
+          const wrapper = document.createElement("div");
+          wrapper.className =
+            "option-wrapper w-full h-full flex items-center justify-center cursor-pointer scene relative";
+          wrapper.dataset.index = net.originalIndex;
+          wrapper.dataset.isCorrect = net.isCorrect;
+
+          const netVisual = document.createElement("div");
+          netVisual.className = "net-container pointer-events-none";
+          netVisual.style.transform = "translate(-50%, -50%) scale(0.6)";
+
+          const builtNet = buildNetDOM(net.root);
+
+          // Centering math
+          const bounds = getNetBounds(net.root);
+          const centerX = bounds.minX + (bounds.maxX - bounds.minX) / 2;
+          const centerY = bounds.minY + (bounds.maxY - bounds.minY) / 2;
+          builtNet.style.marginLeft = `-${centerX}px`;
+          builtNet.style.marginTop = `-${centerY}px`;
+
+          netVisual.appendChild(builtNet);
+          wrapper.appendChild(netVisual);
+
+          wrapper.addEventListener("click", () => {
+            if (gameState !== "selecting") return;
+            document
+              .querySelectorAll(".option-wrapper")
+              .forEach((el) => el.classList.remove("selected"));
+            wrapper.classList.add("selected");
+            selectedNetIndex = net.originalIndex;
+
+            inlineBtn.textContent = "DONE";
+            inlineBtn.className =
+              "absolute bottom-2 right-2 bg-yellow-400 text-gray-900 px-4 py-1.5 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer";
+            inlineBtn.disabled = false;
+            inlineBtn.classList.remove("hidden");
+            wrapper.appendChild(inlineBtn);
+          });
+          grid.appendChild(wrapper);
+        });
+      }
+
+      // Inline button logic router
+      document
+        .getElementById("inlineDoneBtn")
+        .addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (gameState === "selecting") {
+            executeAnswer();
+          } else if (gameState === "failed") {
+            resetTry();
+          } else if (gameState === "done") {
+            currentLevelNum++;
+            if (currentLevelNum >= maxLevels) {
+              document.getElementById("winScreen").classList.remove("hidden");
+              fireMassiveConfetti();
+            } else loadLevel();
+          }
         });
 
-        // --- Engine: Build 2D HTML Structure ---
-        function buildNetDOM(node, isRoot = true) {
-            const el = document.createElement('div');
-            el.className = `face shape-${node.shape || 'rectangle'}`;
-            el.style.width = node.w + 'px';
-            el.style.height = node.h + 'px';
-            el.style.backgroundColor = node.color;
+      function executeAnswer() {
+        const inlineBtn = document.getElementById("inlineDoneBtn");
+        const status = document.getElementById("statusText");
 
-            if (!isRoot) {
-                if (node.edge === 'right') { el.style.left = '100%'; el.style.top = '0'; el.style.transformOrigin = 'left center'; }
-                else if (node.edge === 'left') { el.style.right = '100%'; el.style.top = '0'; el.style.transformOrigin = 'right center'; }
-                else if (node.edge === 'top') { el.style.bottom = '100%'; el.style.left = '0'; el.style.transformOrigin = 'center bottom'; }
-                else if (node.edge === 'bottom') { el.style.top = '100%'; el.style.left = '0'; el.style.transformOrigin = 'center top'; }
-            }
+        if (selectedNetIndex === null) return;
+        const selectedData = currentLevelData.nets[selectedNetIndex];
+        const selectedWrapper = document.querySelector(
+          `.option-wrapper[data-index="${selectedNetIndex}"]`,
+        );
 
-            if (node.children) node.children.forEach(c => el.appendChild(buildNetDOM(c, false)));
-            return el;
-        }
+        gameState = "animating";
+        inlineBtn.disabled = true;
+        inlineBtn.textContent = "...";
+        status.textContent = "Folding selected net...";
 
-        // --- Engine: Build 3D WebGL Structure ---
-        function buildThreeJsNet(node, isRoot = true) {
-            const SCALE = 40; 
-            const w = node.w / SCALE;
-            const h = node.h / SCALE;
-            const hinge = new THREE.Group();
-            
-            let geometry;
-            if (node.shape === 'triangle-up') {
-                const shape = new THREE.Shape();
-                shape.moveTo(-w/2, -h/2); shape.lineTo(w/2, -h/2); shape.lineTo(0, h/2); shape.lineTo(-w/2, -h/2);
-                geometry = new THREE.ShapeGeometry(shape);
-            } else if (node.shape === 'triangle-down') {
-                const shape = new THREE.Shape();
-                shape.moveTo(-w/2, h/2); shape.lineTo(w/2, h/2); shape.lineTo(0, -h/2); shape.lineTo(-w/2, h/2);
-                geometry = new THREE.ShapeGeometry(shape);
-            } else if (node.shape === 'triangle-left') {
-                const shape = new THREE.Shape();
-                shape.moveTo(w/2, h/2); shape.lineTo(w/2, -h/2); shape.lineTo(-w/2, 0); shape.lineTo(w/2, h/2);
-                geometry = new THREE.ShapeGeometry(shape);
-            } else if (node.shape === 'triangle-right') {
-                const shape = new THREE.Shape();
-                shape.moveTo(-w/2, h/2); shape.lineTo(-w/2, -h/2); shape.lineTo(w/2, 0); shape.lineTo(-w/2, h/2);
-                geometry = new THREE.ShapeGeometry(shape);
-            } else if (node.shape === 'hexagon') {
-                const shape = new THREE.Shape();
-                shape.moveTo(-w/4, h/2); shape.lineTo(w/4, h/2); shape.lineTo(w/2, 0); 
-                shape.lineTo(w/4, -h/2); shape.lineTo(-w/4, -h/2); shape.lineTo(-w/2, 0); shape.lineTo(-w/4, h/2);
-                geometry = new THREE.ShapeGeometry(shape);
-            } else if (node.shape === 'pentagon') {
-                const shape = new THREE.Shape();
-                shape.moveTo(0, h/2); shape.lineTo(w/2, h*0.12); shape.lineTo(w*0.32, -h/2); shape.lineTo(-w*0.32, -h/2); shape.lineTo(-w/2, h*0.12); shape.lineTo(0, h/2);
-                geometry = new THREE.ShapeGeometry(shape);
-            } else if (node.shape === 'pentagon-down') {
-                const shape = new THREE.Shape();
-                shape.moveTo(0, -h/2); shape.lineTo(w/2, -h*0.12); shape.lineTo(w*0.32, h/2); shape.lineTo(-w*0.32, h/2); shape.lineTo(-w/2, -h*0.12); shape.lineTo(0, -h/2);
-                geometry = new THREE.ShapeGeometry(shape);
-            } else {
-                geometry = new THREE.PlaneGeometry(w, h);
-            }
-
-            const material = new THREE.MeshStandardMaterial({ 
-                color: node.color, side: THREE.DoubleSide, roughness: 0.6,
-                polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 })));
-
-            if (!isRoot) {
-                if (node.edge === 'right') mesh.position.set(w/2, 0, 0);
-                if (node.edge === 'left') mesh.position.set(-w/2, 0, 0);
-                if (node.edge === 'top') mesh.position.set(0, h/2, 0);
-                if (node.edge === 'bottom') mesh.position.set(0, -h/2, 0);
-            }
-            hinge.add(mesh);
-
-            if (node.foldAngle) {
-                let rad = Math.abs(node.foldAngle * Math.PI / 180);
-                hinge.userData = {
-                    targetAngle: (node.edge === 'left' || node.edge === 'top') ? -rad : rad, 
-                    currentAngle: 0,
-                    axis: ['top', 'bottom'].includes(node.edge) ? 'x' : 'y'
-                };
-                foldingHinges.push(hinge);
-            }
-
-            if (node.children) {
-                node.children.forEach(child => {
-                    const childHinge = buildThreeJsNet(child, false);
-                    if (child.edge === 'right') childHinge.position.set(w/2, 0, 0);
-                    if (child.edge === 'left') childHinge.position.set(-w/2, 0, 0);
-                    if (child.edge === 'top') childHinge.position.set(0, h/2, 0);
-                    if (child.edge === 'bottom') childHinge.position.set(0, -h/2, 0);
-                    mesh.add(childHinge);
-                });
-            }
-            return hinge;
-        }
-
-        // --- Game Logic ---
-        function loadLevel() {
-            gameState = 'selecting';
-            selectedNetIndex = null;
-            
-            currentLevelData = JSON.parse(JSON.stringify(levelQueue[currentLevelNum]));
-            const shuffledPalette = [...PALETTE].sort(() => Math.random() - 0.5);
-            const colorMap = {};
-
-            currentLevelData.threeDProps.colors = currentLevelData.threeDProps.colors.map(cId => {
-                if(!colorMap[cId]) colorMap[cId] = shuffledPalette.pop();
-                return colorMap[cId];
-            });
-
-            function applyColorMap(node) {
-                if (node.color !== undefined) {
-                    if(!colorMap[node.color]) colorMap[node.color] = shuffledPalette.pop();
-                    node.color = colorMap[node.color];
-                }
-                if (node.children) node.children.forEach(applyColorMap);
-            }
-            currentLevelData.nets.forEach(n => applyColorMap(n.root));
-
-            document.getElementById('levelIndicator').textContent = `Level ${currentLevelNum + 1}/${maxLevels}`;
-            document.getElementById('statusText').textContent = 'Choose the correct net.';
-            
-            // Move inline button out of grid during reset
-            const inlineBtn = document.getElementById('inlineDoneBtn');
-            inlineBtn.classList.add('hidden');
-            document.body.appendChild(inlineBtn); 
-            
-            // Reset Animation Container safely
-            const animContainer = document.getElementById('threeAnimContainer');
-            animContainer.classList.add('hidden');
-            document.body.appendChild(animContainer);
-            if (animControls) animControls.enabled = false;
-
-            const grid = document.getElementById('optionsGrid');
-            grid.innerHTML = ''; 
-
-            if (!threeScene) initThreeJS();
-            
-            if (targetMesh) {
-                threeScene.remove(targetMesh);
-                targetMesh.geometry.dispose();
-                if (Array.isArray(targetMesh.material)) targetMesh.material.forEach(m => m.dispose());
-                else targetMesh.material.dispose();
-            }
-
-            const props = currentLevelData.threeDProps;
-            let geometry;
-            if (props.type === 'box') {
-                geometry = new THREE.BoxGeometry(props.w, props.h, props.d);
-            } else if (props.type === 'prism') {
-                geometry = new THREE.CylinderGeometry(props.radius, props.radius, props.d, props.sides);
-            } else if (props.type === 'pyramid') {
-                geometry = new THREE.ConeGeometry(props.radius, props.d, props.sides);
-                geometry.rotateX(Math.PI / 2); 
-                geometry.rotateZ(Math.PI / 4); 
-            }
-
-            const materials = props.colors.map(c => new THREE.MeshStandardMaterial({ 
-                color: c, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.DoubleSide
-            }));
-            
-            targetMesh = new THREE.Mesh(geometry, materials);
-            targetMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 })));
-            targetMesh.rotation.set(props.rotX, props.rotY, 0);
-            threeScene.add(targetMesh);
-            
-            threeCamera.position.set(3, 4, 5);
-            threeControls.target.set(0, 0, 0);
-            threeControls.update();
-
-            const shuffledNets = currentLevelData.nets.map((n, i) => ({...n, originalIndex: i})).sort(() => Math.random() - 0.5);
-
-            shuffledNets.forEach((net) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'option-wrapper w-full h-full flex items-center justify-center cursor-pointer scene relative';
-                wrapper.dataset.index = net.originalIndex;
-                wrapper.dataset.isCorrect = net.isCorrect;
-
-                const netVisual = document.createElement('div');
-                netVisual.className = 'net-container pointer-events-none';
-                netVisual.style.transform = 'translate(-50%, -50%) scale(0.6)'; 
-                
-                netVisual.appendChild(buildNetDOM(net.root));
-                wrapper.appendChild(netVisual);
-                
-                wrapper.addEventListener('click', () => {
-                    if (gameState !== 'selecting') return;
-                    document.querySelectorAll('.option-wrapper').forEach(el => el.classList.remove('selected'));
-                    wrapper.classList.add('selected');
-                    selectedNetIndex = net.originalIndex;
-                    
-                    // Show Done button explicitly in this grid cell
-                    inlineBtn.textContent = 'DONE';
-                    inlineBtn.className = 'absolute bottom-2 right-2 bg-yellow-400 text-gray-900 px-4 py-1.5 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer';
-                    inlineBtn.disabled = false;
-                    inlineBtn.classList.remove('hidden');
-                    wrapper.appendChild(inlineBtn);
-                });
-                grid.appendChild(wrapper);
-            });
-        }
-
-        // Inline button logic router
-        document.getElementById('inlineDoneBtn').addEventListener('click', (e) => {
-            e.stopPropagation(); // Stop click from re-selecting the wrapper
-            if (gameState === 'selecting') {
-                executeAnswer();
-            } else if (gameState === 'failed') {
-                resetTry();
-            } else if (gameState === 'done') {
-                currentLevelNum++;
-                if (currentLevelNum >= maxLevels) {
-                    document.getElementById('winScreen').classList.remove('hidden');
-                } else loadLevel();
-            }
+        // Dim other options to focus on this grid cell
+        document.querySelectorAll(".option-wrapper").forEach((el) => {
+          if (el !== selectedWrapper) {
+            el.style.opacity = "0.3";
+            el.style.pointerEvents = "none";
+          }
         });
 
-        function executeAnswer() {
-            const inlineBtn = document.getElementById('inlineDoneBtn');
-            const status = document.getElementById('statusText');
+        // Hide the 2D SVG
+        selectedWrapper.querySelector(".net-container").style.opacity = "0";
 
-            if (selectedNetIndex === null) return;
-            const selectedData = currentLevelData.nets[selectedNetIndex];
-            const selectedWrapper = document.querySelector(`.option-wrapper[data-index="${selectedNetIndex}"]`);
-            
-            gameState = 'animating';
-            inlineBtn.disabled = true;
-            inlineBtn.textContent = '...';
-            status.textContent = 'Folding selected net...';
-            
-            // Dim other options to focus on this grid cell
-            document.querySelectorAll('.option-wrapper').forEach(el => {
-                if (el !== selectedWrapper) {
-                    el.style.opacity = '0.3';
-                    el.style.pointerEvents = 'none';
-                }
-            });
+        // Setup in-place 3D Animation Container
+        if (animGroup) animScene.remove(animGroup);
+        foldingHinges = [];
+        isFolding = false;
+        isRotatingGroup = false;
 
-            // Hide the 2D SVG
-            selectedWrapper.querySelector('.net-container').style.opacity = '0';
-
-            // Setup in-place 3D Animation Container
-            if (animGroup) animScene.remove(animGroup);
-            foldingHinges = []; isFolding = false; isRotatingGroup = false;
-
-            if (animControls) {
-                animCamera.position.set(0, 0, 7); // Zoomed in closer for grid-cell context
-                animControls.target.set(0, 0, 0);
-                animControls.update();
-            }
-
-            animGroup = buildThreeJsNet(selectedData.root);
-            animScene.add(animGroup);
-            animGroup.rotation.set(0, 0, 0);
-            
-            const animContainer = document.getElementById('threeAnimContainer');
-            selectedWrapper.appendChild(animContainer);
-            animContainer.classList.remove('hidden');
-            
-            // Resize renderer to match the specific grid cell
-            const rect = selectedWrapper.getBoundingClientRect();
-            animCamera.aspect = rect.width / rect.height;
-            animCamera.updateProjectionMatrix();
-            animRenderer.setSize(rect.width, rect.height);
-
-            setTimeout(() => {
-                isFolding = true; 
-                setTimeout(() => {
-                    isRotatingGroup = true; 
-                    setTimeout(() => {
-                        if (animControls) animControls.enabled = true;
-
-                        if (selectedData.isCorrect) {
-                            fireConfetti();
-                            gameState = 'done';
-                            inlineBtn.textContent = 'NEXT ▶';
-                            inlineBtn.className = 'absolute bottom-2 right-2 bg-green-500 text-white px-4 py-1.5 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-green-400 transform transition-transform active:scale-95 z-20 cursor-pointer';
-                            inlineBtn.disabled = false;
-                            status.textContent = 'Perfect match!';
-                        } else {
-                            gameState = 'failed';
-                            inlineBtn.textContent = 'TRY AGAIN ↻';
-                            inlineBtn.className = 'absolute bottom-2 right-2 bg-red-500 text-white px-4 py-1.5 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-red-400 transform transition-transform active:scale-95 z-20 cursor-pointer';
-                            inlineBtn.disabled = false;
-                            status.textContent = "Oops! Drag the shape around to see why.";
-                        }
-                    }, 1000);
-                }, 1200);
-            }, 400);
+        if (animControls) {
+          animCamera.position.set(0, 0, 7);
+          animControls.target.set(0, 0, 0);
+          animControls.update();
         }
 
-        function resetTry() {
-            gameState = 'selecting';
-            document.getElementById('statusText').textContent = 'Choose the correct net.';
-            
-            // Hide 3D container
-            const animContainer = document.getElementById('threeAnimContainer');
-            animContainer.classList.add('hidden');
-            document.body.appendChild(animContainer);
-            if (animControls) animControls.enabled = false;
-            
-            // Mark selected as disabled
-            const selectedWrapper = document.querySelector(`.option-wrapper[data-index="${selectedNetIndex}"]`);
-            if(selectedWrapper) {
-                selectedWrapper.classList.add('disabled');
-                selectedWrapper.classList.remove('selected');
-                selectedWrapper.querySelector('.net-container').style.opacity = '1';
-                
-                // Hide inline button
-                const inlineBtn = document.getElementById('inlineDoneBtn');
-                inlineBtn.classList.add('hidden');
-                document.body.appendChild(inlineBtn);
-            }
-            selectedNetIndex = null;
+        animGroup = buildThreeJsNet(selectedData.root);
 
-            // Brighten up the remaining valid options
-            document.querySelectorAll('.option-wrapper:not(.disabled)').forEach(el => {
-                el.style.opacity = '1';
-                el.style.pointerEvents = 'auto';
-            });
+        const bounds = getNetBounds(selectedData.root);
+        const centerX = bounds.minX + (bounds.maxX - bounds.minX) / 2;
+        const centerY = bounds.minY + (bounds.maxY - bounds.minY) / 2;
+        const shiftX = centerX - selectedData.root.w / 2;
+        const shiftY = centerY - selectedData.root.h / 2;
+        animGroup.position.set(-shiftX / 40, shiftY / 40, 0);
+
+        animScene.add(animGroup);
+        animGroup.rotation.set(0, 0, 0);
+
+        const animContainer = document.getElementById("threeAnimContainer");
+        selectedWrapper.appendChild(animContainer);
+        animContainer.classList.remove("hidden");
+
+        // Re-inject drag text
+        const dragText = document.getElementById("animDragText");
+        selectedWrapper.appendChild(dragText);
+
+        // Resize renderer to match the specific grid cell
+        const rect = selectedWrapper.getBoundingClientRect();
+        animCamera.aspect = rect.width / rect.height;
+        animCamera.updateProjectionMatrix();
+        animRenderer.setSize(rect.width, rect.height);
+
+        setTimeout(() => {
+          // Set staggered start times based on parse index
+          foldingHinges.forEach((hinge, index) => {
+            hinge.userData.startTime = performance.now() + index * 800;
+          });
+          isFolding = true;
+        }, 400);
+      }
+
+      function finalizeEvaluation() {
+        const inlineBtn = document.getElementById("inlineDoneBtn");
+        const status = document.getElementById("statusText");
+        const dragText = document.getElementById("animDragText");
+        const selectedData = currentLevelData.nets[selectedNetIndex];
+
+        if (animControls) animControls.enabled = true;
+
+        if (selectedData.isCorrect) {
+          // ZOOM TO FULL RIGHT PANE!
+          const animCenter = document.getElementById("animationCenter");
+          const animContainer = document.getElementById("threeAnimContainer");
+
+          // Move 3D container to the center pane overlay
+          animCenter.appendChild(animContainer);
+
+          // Fade out the background grid completely
+          document.getElementById("optionsGrid").style.opacity = "0";
+
+          // Update renderer for large pane
+          animCenter.classList.remove("hidden");
+          const rect = animCenter.getBoundingClientRect();
+          animCamera.aspect = rect.width / rect.height;
+          animCamera.updateProjectionMatrix();
+          animRenderer.setSize(rect.width, rect.height);
+          animCamera.position.set(0, 0, 10); // zoom out for larger view
+
+          // Animate zoom
+          animCenter.classList.remove("opacity-0", "pointer-events-none");
+          animCenter.classList.add(
+            "pop-out",
+            "pointer-events-auto",
+            "opacity-100",
+          );
+
+          // Move text and button to the large center pane
+          dragText.classList.remove("hidden");
+          animCenter.appendChild(dragText);
+
+          fireConfetti();
+          gameState = "done";
+          inlineBtn.textContent = "NEXT LEVEL ▶";
+          inlineBtn.className =
+            "absolute bottom-6 right-6 bg-green-500 text-white px-8 py-4 rounded-xl font-black text-lg uppercase shadow-2xl hover:bg-green-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
+          inlineBtn.disabled = false;
+          animCenter.appendChild(inlineBtn);
+
+          status.textContent = "Perfect match! Drag to inspect.";
+        } else {
+          // KEEP IN GRID CELL FOR INCORRECT
+          gameState = "failed";
+          inlineBtn.textContent = "TRY AGAIN ↻";
+          inlineBtn.className =
+            "absolute bottom-2 right-2 bg-red-500 text-white px-4 py-1.5 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-red-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
+          inlineBtn.disabled = false;
+
+          dragText.classList.remove("hidden");
+          status.textContent = "Oops! Drag the shape around to see why.";
         }
+      }
 
-        // --- Canvas Confetti Engine ---
-        const canvas = document.getElementById('confettiCanvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
+      function resetTry() {
+        gameState = "selecting";
+        document.getElementById("statusText").textContent =
+          "Choose the correct net.";
 
-        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+        // Hide 3D container & reset UI
+        const animContainer = document.getElementById("threeAnimContainer");
+        animContainer.classList.add("hidden");
+        document.body.appendChild(animContainer);
 
-        function fireConfetti() {
-            const colors = PALETTE;
-            for (let i = 0; i < 150; i++) {
-                particles.push({
-                    x: canvas.width / 2 + 200, y: canvas.height / 2 + 100,
-                    r: Math.random() * 6 + 4, dx: Math.random() * 20 - 10, dy: Math.random() * -15 - 5,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    tilt: Math.floor(Math.random() * 10) - 10, tiltAngle: 0, tiltAngleInc: (Math.random() * 0.07) + 0.05
-                });
-            }
-            if(particles.length <= 150) animateConfetti();
+        const dragText = document.getElementById("animDragText");
+        dragText.classList.add("hidden");
+        document.body.appendChild(dragText);
+
+        if (animControls) animControls.enabled = false;
+
+        const selectedWrapper = document.querySelector(
+          `.option-wrapper[data-index="${selectedNetIndex}"]`,
+        );
+        if (selectedWrapper) {
+          selectedWrapper.classList.add("disabled");
+          selectedWrapper.classList.remove("selected");
+          selectedWrapper.querySelector(".net-container").style.opacity = "1";
+
+          const inlineBtn = document.getElementById("inlineDoneBtn");
+          inlineBtn.classList.add("hidden");
+          document.body.appendChild(inlineBtn);
         }
+        selectedNetIndex = null;
 
-        function animateConfetti() {
-            requestAnimationFrame(animateConfetti);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (particles.length === 0) return;
-            particles.forEach((p, index) => {
-                p.tiltAngle += p.tiltAngleInc;
-                p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
-                p.x += Math.sin(p.tiltAngle) * 2;
-                p.dy += 0.2; p.y += p.dy; p.x += p.dx;
-                ctx.beginPath(); ctx.lineWidth = p.r; ctx.strokeStyle = p.color;
-                ctx.moveTo(p.x + p.tilt + p.r, p.y); ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r); ctx.stroke();
-                if (p.y > canvas.height) particles.splice(index, 1);
-            });
+        // Brighten up the remaining valid options
+        document
+          .querySelectorAll(".option-wrapper:not(.disabled)")
+          .forEach((el) => {
+            el.style.opacity = "1";
+            el.style.pointerEvents = "auto";
+          });
+      }
+
+      // --- Canvas Confetti Engine ---
+      const canvas = document.getElementById("confettiCanvas");
+      const ctx = canvas.getContext("2d");
+      let particles = [];
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      function fireConfetti() {
+        const colors = PALETTE;
+        // Target the center of the right pane
+        const originX = window.innerWidth * (2 / 3);
+        for (let i = 0; i < 150; i++) {
+          particles.push({
+            x: originX,
+            y: canvas.height / 2 + 100,
+            r: Math.random() * 6 + 4,
+            dx: Math.random() * 20 - 10,
+            dy: Math.random() * -15 - 5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            tilt: Math.floor(Math.random() * 10) - 10,
+            tiltAngle: 0,
+            tiltAngleInc: Math.random() * 0.07 + 0.05,
+          });
         }
+        if (particles.length <= 150) animateConfetti();
+      }
 
-        window.onload = startGame;
+      // Dedicated massive explosion for the win screen
+      function fireMassiveConfetti() {
+        const colors = PALETTE;
+        for (let i = 0; i < 300; i++) {
+          particles.push({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            r: Math.random() * 8 + 4,
+            dx: Math.random() * 30 - 15,
+            dy: Math.random() * -25 - 5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            tilt: Math.floor(Math.random() * 10) - 10,
+            tiltAngle: 0,
+            tiltAngleInc: Math.random() * 0.07 + 0.05,
+          });
+        }
+        if (particles.length <= 300) animateConfetti();
+      }
+
+      function animateConfetti() {
+        requestAnimationFrame(animateConfetti);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (particles.length === 0) return;
+        particles.forEach((p, index) => {
+          p.tiltAngle += p.tiltAngleInc;
+          p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
+          p.x += Math.sin(p.tiltAngle) * 2;
+          p.dy += 0.2;
+          p.y += p.dy;
+          p.x += p.dx;
+          ctx.beginPath();
+          ctx.lineWidth = p.r;
+          ctx.strokeStyle = p.color;
+          ctx.moveTo(p.x + p.tilt + p.r, p.y);
+          ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+          ctx.stroke();
+          if (p.y > canvas.height) particles.splice(index, 1);
+        });
+      }
+
+      window.onload = startGame;
     </script>
-</body>
+  </body>
 </html>
