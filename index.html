@@ -19,8 +19,21 @@
         position: absolute;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg);
+        transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg)
+          scale(var(--net-scale, 0.4));
         transition: opacity 0.3s;
+      }
+
+      /* Responsive scaling for the 2D SVG nets */
+      @media (min-width: 768px) {
+        .net-container {
+          --net-scale: 0.6;
+        }
+      }
+      @media (max-width: 767px) and (orientation: landscape) {
+        .net-container {
+          --net-scale: 0.35; /* Prevent overlap on tight landscape phones */
+        }
       }
 
       .face {
@@ -70,10 +83,16 @@
         background-image:
           linear-gradient(rgba(255, 255, 255, 0.7) 2px, transparent 2px),
           linear-gradient(90deg, rgba(255, 255, 255, 0.7) 2px, transparent 2px);
-        background-size: 32px 32px;
+        background-size: 20px 20px;
         box-shadow: inset 0 0 30px rgba(14, 165, 233, 0.08);
         border-radius: 1.5rem;
         transition: opacity 0.5s ease;
+      }
+
+      @media (min-width: 768px) {
+        .blueprint-grid {
+          background-size: 32px 32px;
+        }
       }
 
       /* Modernized Option Wrappers */
@@ -133,14 +152,14 @@
       class="absolute inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center transition-opacity duration-500"
     >
       <div
-        class="bg-white rounded-[2rem] p-10 w-[40%] min-w-[340px] shadow-2xl text-center flex flex-col items-center border border-white/50"
+        class="bg-white rounded-[2rem] p-6 md:p-10 w-[90%] md:w-[40%] min-w-[300px] shadow-2xl text-center flex flex-col items-center border border-white/50"
       >
         <div
-          class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mb-6 shadow-inner"
+          class="w-20 h-20 md:w-24 md:h-24 bg-yellow-100 rounded-full flex items-center justify-center mb-6 shadow-inner"
         >
           <!-- 3D Cube Icon -->
           <svg
-            class="w-12 h-12 text-yellow-500"
+            class="w-10 h-10 md:w-12 md:h-12 text-yellow-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -154,16 +173,18 @@
             ></path>
           </svg>
         </div>
-        <h1 class="text-4xl font-black mb-2 text-slate-800 tracking-tight">
+        <h1
+          class="text-3xl md:text-4xl font-black mb-2 text-slate-800 tracking-tight"
+        >
           3D Net Folding
         </h1>
-        <p class="text-lg text-slate-500 mb-8 leading-relaxed">
+        <p class="text-base md:text-lg text-slate-500 mb-8 leading-relaxed">
           Test your spatial reasoning! Can you figure out which 2D net correctly
           folds into the target shape?
         </p>
         <button
           id="playNowBtn"
-          class="w-full bg-yellow-400 text-yellow-950 py-4 rounded-2xl font-bold text-xl uppercase tracking-wider shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 hover:-translate-y-1 transition-all active:scale-95 active:translate-y-0"
+          class="w-full bg-yellow-400 text-yellow-950 py-3 md:py-4 rounded-2xl font-bold text-lg md:text-xl uppercase tracking-wider shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 hover:-translate-y-1 transition-all active:scale-95 active:translate-y-0"
         >
           Play Now
         </button>
@@ -181,13 +202,13 @@
       class="absolute inset-0 bg-slate-900/50 backdrop-blur-md z-40 hidden flex items-center justify-center transition-opacity duration-500"
     >
       <div
-        class="bg-white rounded-[2rem] p-10 max-w-md w-full shadow-2xl text-center flex flex-col items-center border border-white/50"
+        class="bg-white rounded-[2rem] p-6 md:p-10 max-w-md w-[90%] md:w-full shadow-2xl text-center flex flex-col items-center border border-white/50"
       >
         <div
-          class="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6 shadow-inner ring-4 ring-emerald-50"
+          class="w-20 h-20 md:w-24 md:h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6 shadow-inner ring-4 ring-emerald-50"
         >
           <svg
-            class="w-12 h-12 text-emerald-500"
+            class="w-10 h-10 md:w-12 md:h-12 text-emerald-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -200,10 +221,12 @@
             ></path>
           </svg>
         </div>
-        <h1 class="text-4xl font-black mb-2 text-slate-800 tracking-tight">
+        <h1
+          class="text-3xl md:text-4xl font-black mb-2 text-slate-800 tracking-tight"
+        >
           You Nailed It!
         </h1>
-        <p class="text-lg text-slate-500 mb-8">
+        <p class="text-base md:text-lg text-slate-500 mb-8">
           You successfully folded all the 3D shapes. Outstanding spatial
           thinking!
         </p>
@@ -212,7 +235,7 @@
             playSelectSound();
             startGame();
           "
-          class="w-full bg-yellow-400 text-yellow-950 py-4 rounded-2xl font-bold text-xl uppercase tracking-wider shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 hover:-translate-y-1 transition-all active:scale-95 active:translate-y-0"
+          class="w-full bg-yellow-400 text-yellow-950 py-3 md:py-4 rounded-2xl font-bold text-lg md:text-xl uppercase tracking-wider shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 hover:-translate-y-1 transition-all active:scale-95 active:translate-y-0"
         >
           Play Again
         </button>
@@ -226,37 +249,37 @@
     ></div>
     <div
       id="animDragText"
-      class="hidden absolute top-4 left-0 w-full text-center text-sm font-bold text-slate-600 opacity-90 pointer-events-none z-20 bg-white/50 backdrop-blur px-4 py-1 mx-auto max-w-max rounded-full shadow-sm"
+      class="hidden absolute top-2 md:top-4 left-0 w-full text-center text-xs md:text-sm font-bold text-slate-600 opacity-90 pointer-events-none z-20 bg-white/50 backdrop-blur px-3 md:px-4 py-1 mx-auto max-w-max rounded-full shadow-sm"
     >
       Drag to rotate folded shape
     </div>
     <button
       id="inlineDoneBtn"
-      class="hidden absolute bottom-4 right-4 bg-yellow-400 text-yellow-950 px-6 py-2.5 rounded-xl font-bold text-sm uppercase shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer"
+      class="hidden absolute bottom-2 right-2 md:bottom-4 md:right-4 bg-yellow-400 text-yellow-950 px-4 py-1.5 md:px-6 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm uppercase shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer"
     >
       DONE
     </button>
 
-    <!-- Main Game Area (Glassmorphism container) -->
+    <!-- Main Game Area (Glassmorphism container, responsive flex-col on mobile) -->
     <div
-      class="flex-1 flex w-full max-w-7xl mx-auto mt-6 mb-4 bg-white/60 backdrop-blur-xl rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-white p-4 gap-4 relative"
+      class="flex-1 flex flex-col md:flex-row w-[95%] md:w-full max-w-7xl mx-auto mt-4 mb-2 md:mt-6 md:mb-4 bg-white/60 backdrop-blur-xl rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-white p-2 md:p-4 gap-2 md:gap-4 relative overflow-y-auto overflow-x-hidden md:overflow-hidden"
     >
       <!-- Left Pane -->
       <div
-        class="w-1/3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 rounded-[2rem] relative flex flex-col items-center justify-center shadow-inner overflow-hidden border border-amber-100/50"
+        class="h-[35%] min-h-[220px] md:h-auto md:w-1/3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 rounded-[1.5rem] md:rounded-[2rem] relative flex flex-col items-center justify-center shadow-inner overflow-hidden border border-amber-100/50 shrink-0"
         id="targetPane"
       >
         <h2
-          class="absolute top-8 w-full text-center text-2xl font-black text-slate-800/80 z-10 tracking-tight pointer-events-none"
+          class="absolute top-4 md:top-8 w-full text-center text-lg md:text-2xl font-black text-slate-800/80 z-10 tracking-tight pointer-events-none"
         >
           Target Shape
         </h2>
         <div id="threeContainer" class="absolute inset-0"></div>
         <div
-          class="absolute bottom-6 left-0 w-full flex justify-center pointer-events-none"
+          class="absolute bottom-4 md:bottom-6 left-0 w-full flex justify-center pointer-events-none"
         >
           <span
-            class="text-sm font-bold text-amber-800/60 bg-amber-100/50 backdrop-blur px-4 py-1.5 rounded-full"
+            class="text-xs md:text-sm font-bold text-amber-800/60 bg-amber-100/50 backdrop-blur px-3 py-1 md:px-4 md:py-1.5 rounded-full"
             >Auto-rotating (Drag to inspect)</span
           >
         </div>
@@ -264,42 +287,42 @@
 
       <!-- Right Pane -->
       <div
-        class="w-2/3 bg-slate-50/80 rounded-[2rem] border border-white p-6 relative overflow-hidden flex flex-col shadow-inner"
+        class="flex-1 md:w-2/3 bg-slate-50/80 rounded-[1.5rem] md:rounded-[2rem] border border-white p-3 md:p-6 relative overflow-hidden flex flex-col shadow-inner"
         id="rightPane"
       >
         <h2
-          class="text-2xl font-black text-slate-800/80 mb-5 z-10 text-center pointer-events-none tracking-tight"
+          class="text-xl md:text-2xl font-black text-slate-800/80 mb-2 md:mb-5 z-10 text-center pointer-events-none tracking-tight"
         >
           Choose the correct Net
         </h2>
         <div
-          class="w-full flex-1 blueprint-grid p-5 grid grid-cols-2 grid-rows-2 gap-6 relative"
+          class="w-full flex-1 blueprint-grid p-2 md:p-5 grid grid-cols-2 grid-rows-2 gap-3 md:gap-6 relative"
           id="optionsGrid"
         ></div>
 
         <!-- Full Screen Overlay -->
         <div
           id="animationCenter"
-          class="absolute inset-0 pointer-events-none hidden items-center justify-center transition-opacity duration-500 z-30 rounded-[1.5rem] m-6 bg-white/90 backdrop-blur-md shadow-2xl border-2 border-emerald-400"
+          class="absolute inset-0 pointer-events-none hidden items-center justify-center transition-opacity duration-500 z-30 rounded-[1.5rem] m-2 md:m-6 bg-white/90 backdrop-blur-md shadow-2xl border-2 border-emerald-400"
         ></div>
       </div>
     </div>
 
     <!-- Floating Bottom Action Pill -->
     <div
-      class="h-16 max-w-2xl w-full mx-auto mb-6 bg-slate-800/95 backdrop-blur-md rounded-full text-white flex items-center justify-between px-8 shadow-xl shadow-slate-800/20 border border-slate-700 shrink-0 relative"
+      class="h-14 md:h-16 max-w-2xl w-[95%] md:w-full mx-auto mb-4 md:mb-6 bg-slate-800/95 backdrop-blur-md rounded-full text-white flex items-center justify-between px-5 md:px-8 shadow-xl shadow-slate-800/20 border border-slate-700 shrink-0 relative"
     >
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 md:gap-4 z-10">
         <span
           id="levelIndicator"
-          class="bg-slate-700/80 px-4 py-1.5 rounded-full text-sm font-bold text-slate-200 shadow-inner border border-slate-600"
+          class="bg-slate-700/80 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs md:text-sm font-bold text-slate-200 shadow-inner border border-slate-600"
           >Level 1</span
         >
       </div>
       <div
-        class="text-lg font-medium tracking-wide flex items-center justify-center absolute inset-0 pointer-events-none"
+        class="text-sm md:text-lg font-medium tracking-wide flex items-center justify-center absolute inset-0 pointer-events-none"
       >
-        <span id="statusText" class="text-slate-300"
+        <span id="statusText" class="text-slate-300 px-16 text-center"
           >Choose the correct net.</span
         >
       </div>
@@ -874,18 +897,18 @@
         isRotatingGroup = false;
 
       // --- Audio Engine ---
-      const bgMusic = new Audio("bg_music.mp3");
+      const bgMusic = new Audio("sounds/bg_music.mp3");
       bgMusic.loop = true;
       bgMusic.volume = 0.4;
 
-      const selectSound = new Audio("select.mp3");
+      const selectSound = new Audio("sounds/select.mp3");
       selectSound.volume = 0.4;
 
-      const clickSound = new Audio("click.mp3");
+      const clickSound = new Audio("sounds/click.mp3");
       clickSound.volume = 1.0;
 
-      const wrongSound = new Audio("wrong.mp3");
-      const congratsSound = new Audio("congrats.mp3");
+      const wrongSound = new Audio("sounds/wrong.mp3");
+      const congratsSound = new Audio("sounds/congrats.mp3");
 
       function playClickSound() {
         clickSound.currentTime = 0;
@@ -905,6 +928,11 @@
         const menu = document.getElementById("mainMenu");
         menu.classList.add("opacity-0", "pointer-events-none");
         setTimeout(() => menu.classList.add("hidden"), 500);
+
+        // Trigger a resize manually after entering the game to ensure aspect ratios are calculated based on the now-visible layout
+        setTimeout(() => {
+          window.dispatchEvent(new Event("resize"));
+        }, 100);
       });
 
       // --- Initialization ---
@@ -1358,6 +1386,9 @@
         threeControls.target.set(0, 0, 0);
         threeControls.update();
 
+        // Resize adjustment for new layout container dynamically
+        window.dispatchEvent(new Event("resize"));
+
         const shuffledNets = currentLevelData.nets
           .map((n, i) => ({ ...n, originalIndex: i }))
           .sort(() => Math.random() - 0.5);
@@ -1370,8 +1401,8 @@
           wrapper.dataset.isCorrect = net.isCorrect;
 
           const netVisual = document.createElement("div");
+          // The CSS class manages scaling cleanly via responsive variables
           netVisual.className = "net-container pointer-events-none";
-          netVisual.style.transform = "translate(-50%, -50%) scale(0.6)";
 
           const builtNet = buildNetDOM(net.root);
 
@@ -1397,7 +1428,7 @@
 
             inlineBtn.textContent = "DONE";
             inlineBtn.className =
-              "absolute bottom-4 right-4 bg-yellow-400 text-yellow-950 px-6 py-2.5 rounded-xl font-bold text-sm uppercase shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer";
+              "absolute bottom-2 right-2 md:bottom-4 md:right-4 bg-yellow-400 text-yellow-950 px-4 py-1.5 md:px-6 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm uppercase shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer";
             inlineBtn.disabled = false;
             inlineBtn.classList.remove("hidden");
             wrapper.appendChild(inlineBtn);
@@ -1537,9 +1568,9 @@
           fireConfetti();
           gameState = "done";
           inlineBtn.innerHTML =
-            '<span class="flex items-center justify-center gap-2">NEXT LEVEL <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg></span>';
+            '<span class="flex items-center justify-center gap-1 md:gap-2">NEXT LEVEL <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-6 md:w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg></span>';
           inlineBtn.className =
-            "absolute bottom-8 right-8 bg-emerald-500 text-white px-8 py-3 rounded-xl font-black text-lg uppercase shadow-xl shadow-emerald-500/30 hover:bg-emerald-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
+            "absolute bottom-4 right-4 md:bottom-8 md:right-8 bg-emerald-500 text-white px-4 py-2 md:px-8 md:py-3 rounded-xl font-black text-sm md:text-lg uppercase shadow-xl shadow-emerald-500/30 hover:bg-emerald-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
           inlineBtn.disabled = false;
           animCenter.appendChild(inlineBtn);
 
@@ -1550,9 +1581,9 @@
 
           gameState = "failed";
           inlineBtn.innerHTML =
-            '<span class="flex items-center justify-center gap-1.5">TRY AGAIN <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></span>';
+            '<span class="flex items-center justify-center gap-1.5">TRY AGAIN <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></span>';
           inlineBtn.className =
-            "absolute bottom-4 right-4 bg-red-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm uppercase shadow-lg shadow-red-500/30 hover:bg-red-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
+            "absolute bottom-2 right-2 md:bottom-4 md:right-4 bg-red-500 text-white px-4 py-1.5 md:px-6 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm uppercase shadow-lg shadow-red-500/30 hover:bg-red-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
           inlineBtn.disabled = false;
 
           dragText.classList.remove("hidden");
