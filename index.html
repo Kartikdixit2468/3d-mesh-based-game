@@ -159,7 +159,10 @@
           You successfully folded all the 3D shapes. Great spatial thinking!
         </p>
         <button
-          onclick="startGame()"
+          onclick="
+            playSelectSound();
+            startGame();
+          "
           class="w-full bg-yellow-400 text-yellow-900 py-4 rounded-xl font-bold text-xl uppercase tracking-wider shadow-md hover:bg-yellow-300 hover:shadow-lg transition-all active:scale-95"
         >
           Play Again
@@ -819,6 +822,40 @@
       let isFolding = false,
         isRotatingGroup = false;
 
+      // --- Audio Engine ---
+      const bgMusic = new Audio("sounds/bg_music.mp3");
+      bgMusic.loop = true;
+      bgMusic.volume = 0.4; // Updated BG volume
+
+      const selectSound = new Audio("sounds/select.mp3");
+      selectSound.volume = 0.5; // Updated select sound volume
+
+      const clickSound = new Audio("sounds/click.mp3");
+      clickSound.volume = 1.0; // Click is max volume
+
+      const wrongSound = new Audio("sounds/wrong.mp3");
+      wrongSound.volume = 0.5; // Updated wrong sound volume
+      const congratsSound = new Audio("sounds/congrats.mp3");
+
+      function playClickSound() {
+        clickSound.currentTime = 0;
+        clickSound.play().catch((e) => {});
+      }
+
+      function playSelectSound() {
+        selectSound.currentTime = 0;
+        selectSound.play().catch((e) => {});
+      }
+
+      // Start BG music strictly on first interaction to respect browser autoplay policies
+      let hasInteracted = false;
+      document.body.addEventListener("pointerdown", () => {
+        if (!hasInteracted) {
+          bgMusic.play().catch((e) => console.log("Audio play failed:", e));
+          hasInteracted = true;
+        }
+      });
+
       // --- Initialization ---
       function startGame() {
         document.getElementById("winScreen").classList.add("hidden");
@@ -1303,6 +1340,10 @@
 
           wrapper.addEventListener("click", () => {
             if (gameState !== "selecting") return;
+
+            // Play click sound when the net is selected
+            playClickSound();
+
             document
               .querySelectorAll(".option-wrapper")
               .forEach((el) => el.classList.remove("selected"));
@@ -1325,6 +1366,10 @@
         .getElementById("inlineDoneBtn")
         .addEventListener("click", (e) => {
           e.stopPropagation();
+
+          // Play select sound on button click (DONE, TRY AGAIN, NEXT LEVEL)
+          playSelectSound();
+
           if (gameState === "selecting") {
             executeAnswer();
           } else if (gameState === "failed") {
@@ -1420,6 +1465,10 @@
         if (animControls) animControls.enabled = true;
 
         if (selectedData.isCorrect) {
+          // Play success sound!
+          congratsSound.currentTime = 0;
+          congratsSound.play().catch((e) => {});
+
           // Calculate true 3D bounding box of folded shape to center it
           const box = new THREE.Box3().setFromObject(animGroup);
           const center = new THREE.Vector3();
@@ -1461,7 +1510,7 @@
 
           fireConfetti();
           gameState = "done";
-          inlineBtn.textContent = "NEXT LEVEL";
+          inlineBtn.textContent = "NEXT LEVEL ";
           inlineBtn.className =
             "absolute bottom-6 right-6 bg-green-500 text-white px-8 py-4 rounded-xl font-black text-lg uppercase shadow-2xl hover:bg-green-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
           inlineBtn.disabled = false;
@@ -1469,6 +1518,10 @@
 
           status.textContent = "Perfect match! Drag to inspect.";
         } else {
+          // Play failure sound!
+          wrongSound.currentTime = 0;
+          wrongSound.play().catch((e) => {});
+
           // KEEP IN GRID CELL FOR INCORRECT
           gameState = "failed";
           inlineBtn.textContent = "TRY AGAIN ↻";
