@@ -27,11 +27,11 @@
         position: absolute;
         transform-style: preserve-3d;
         box-sizing: border-box;
-        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.15);
+        box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15);
       }
 
       .face.shape-rectangle {
-        border: 1px solid rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(0, 0, 0, 0.3);
       }
 
       /* Custom Polygon shapes for 2D Grid */
@@ -64,51 +64,54 @@
         clip-path: polygon(50% 100%, 100% 62%, 82% 0%, 18% 0%, 0% 62%);
       }
 
-      /* Blueprint grid background */
+      /* Refined Blueprint Grid */
       .blueprint-grid {
-        background-color: #7dd3fc;
+        background-color: #e0f2fe; /* Soft Sky Blue */
         background-image:
-          linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
-        background-size: 20px 20px;
-        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.1);
+          linear-gradient(rgba(255, 255, 255, 0.7) 2px, transparent 2px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.7) 2px, transparent 2px);
+        background-size: 32px 32px;
+        box-shadow: inset 0 0 30px rgba(14, 165, 233, 0.08);
+        border-radius: 1.5rem;
         transition: opacity 0.5s ease;
       }
 
-      .target-bg {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-      }
-
+      /* Modernized Option Wrappers */
       .option-wrapper {
-        transition:
-          transform 0.2s,
-          opacity 0.3s;
-        border: 4px solid transparent;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border: 3px solid transparent;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       }
       .option-wrapper:hover {
-        transform: scale(1.02);
+        transform: translateY(-4px) scale(1.02);
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1);
       }
 
-      /* Fully Transparent Selection */
+      /* Fully Transparent, clearly marked selection */
       .option-wrapper.selected {
-        background-color: transparent;
-        border: 4px dashed #3b82f6;
-        border-radius: 12px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border: 3px dashed #3b82f6;
+        box-shadow: inset 0 2px 8px rgba(59, 130, 246, 0.15);
+        transform: scale(1.01);
       }
       .option-wrapper.disabled {
-        opacity: 0.3;
+        opacity: 0.25;
         pointer-events: none;
         filter: grayscale(100%);
+        transform: scale(0.98);
       }
 
       /* Success Zoom Animation */
       @keyframes popOut {
         0% {
-          transform: scale(0.5);
+          transform: scale(0.8);
           opacity: 0;
         }
-        80% {
-          transform: scale(1.05);
+        70% {
+          transform: scale(1.02);
           opacity: 1;
         }
         100% {
@@ -117,13 +120,56 @@
         }
       }
       .pop-out {
-        animation: popOut 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        animation: popOut 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       }
     </style>
   </head>
   <body
-    class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col font-sans select-none"
+    class="bg-gradient-to-br from-slate-100 to-slate-200 h-screen w-screen overflow-hidden flex flex-col font-sans select-none"
   >
+    <!-- Main Menu Overlay -->
+    <div
+      id="mainMenu"
+      class="absolute inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center transition-opacity duration-500"
+    >
+      <div
+        class="bg-white rounded-[2rem] p-10 w-[40%] min-w-[340px] shadow-2xl text-center flex flex-col items-center border border-white/50"
+      >
+        <div
+          class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mb-6 shadow-inner"
+        >
+          <!-- 3D Cube Icon -->
+          <svg
+            class="w-12 h-12 text-yellow-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+            ></path>
+          </svg>
+        </div>
+        <h1 class="text-4xl font-black mb-2 text-slate-800 tracking-tight">
+          3D Net Folding
+        </h1>
+        <p class="text-lg text-slate-500 mb-8 leading-relaxed">
+          Test your spatial reasoning! Can you figure out which 2D net correctly
+          folds into the target shape?
+        </p>
+        <button
+          id="playNowBtn"
+          class="w-full bg-yellow-400 text-yellow-950 py-4 rounded-2xl font-bold text-xl uppercase tracking-wider shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 hover:-translate-y-1 transition-all active:scale-95 active:translate-y-0"
+        >
+          Play Now
+        </button>
+      </div>
+    </div>
+
     <canvas
       id="confettiCanvas"
       class="absolute inset-0 pointer-events-none z-50"
@@ -132,16 +178,16 @@
     <!-- Modern Win Modal -->
     <div
       id="winScreen"
-      class="absolute inset-0 bg-gray-900/60 z-40 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-500"
+      class="absolute inset-0 bg-slate-900/50 backdrop-blur-md z-40 hidden flex items-center justify-center transition-opacity duration-500"
     >
       <div
-        class="bg-white rounded-3xl p-10 max-w-md w-full shadow-2xl text-center flex flex-col items-center border border-gray-100"
+        class="bg-white rounded-[2rem] p-10 max-w-md w-full shadow-2xl text-center flex flex-col items-center border border-white/50"
       >
         <div
-          class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner"
+          class="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6 shadow-inner ring-4 ring-emerald-50"
         >
           <svg
-            class="w-12 h-12 text-green-500"
+            class="w-12 h-12 text-emerald-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -154,16 +200,19 @@
             ></path>
           </svg>
         </div>
-        <h1 class="text-4xl font-black mb-2 text-gray-800">You Nailed It!</h1>
-        <p class="text-lg text-gray-500 mb-8">
-          You successfully folded all the 3D shapes. Great spatial thinking!
+        <h1 class="text-4xl font-black mb-2 text-slate-800 tracking-tight">
+          You Nailed It!
+        </h1>
+        <p class="text-lg text-slate-500 mb-8">
+          You successfully folded all the 3D shapes. Outstanding spatial
+          thinking!
         </p>
         <button
           onclick="
             playSelectSound();
             startGame();
           "
-          class="w-full bg-yellow-400 text-yellow-900 py-4 rounded-xl font-bold text-xl uppercase tracking-wider shadow-md hover:bg-yellow-300 hover:shadow-lg transition-all active:scale-95"
+          class="w-full bg-yellow-400 text-yellow-950 py-4 rounded-2xl font-bold text-xl uppercase tracking-wider shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 hover:-translate-y-1 transition-all active:scale-95 active:translate-y-0"
         >
           Play Again
         </button>
@@ -173,77 +222,86 @@
     <!-- Floating Anim Elements -->
     <div
       id="threeAnimContainer"
-      class="absolute inset-0 z-10 hidden cursor-move rounded-lg"
+      class="absolute inset-0 z-10 hidden cursor-move rounded-2xl overflow-hidden"
     ></div>
     <div
       id="animDragText"
-      class="hidden absolute top-4 left-0 w-full text-center text-sm font-bold text-gray-700 opacity-80 pointer-events-none z-20"
+      class="hidden absolute top-4 left-0 w-full text-center text-sm font-bold text-slate-600 opacity-90 pointer-events-none z-20 bg-white/50 backdrop-blur px-4 py-1 mx-auto max-w-max rounded-full shadow-sm"
     >
       Drag to rotate folded shape
     </div>
     <button
       id="inlineDoneBtn"
-      class="hidden absolute bottom-3 right-3 bg-yellow-400 text-gray-900 px-5 py-2 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer"
+      class="hidden absolute bottom-4 right-4 bg-yellow-400 text-yellow-950 px-6 py-2.5 rounded-xl font-bold text-sm uppercase shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer"
     >
       DONE
     </button>
 
-    <!-- Main Game Area -->
+    <!-- Main Game Area (Glassmorphism container) -->
     <div
-      class="flex-1 flex w-full max-w-6xl mx-auto my-4 bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative"
+      class="flex-1 flex w-full max-w-7xl mx-auto mt-6 mb-4 bg-white/60 backdrop-blur-xl rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-white p-4 gap-4 relative"
     >
+      <!-- Left Pane -->
       <div
-        class="w-1/3 target-bg relative flex flex-col items-center justify-center border-r-4 border-white cursor-move"
+        class="w-1/3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 rounded-[2rem] relative flex flex-col items-center justify-center shadow-inner overflow-hidden border border-amber-100/50"
         id="targetPane"
       >
         <h2
-          class="absolute top-6 w-full text-center text-3xl font-black text-gray-800/80 z-10 drop-shadow-sm pointer-events-none"
+          class="absolute top-8 w-full text-center text-2xl font-black text-slate-800/80 z-10 tracking-tight pointer-events-none"
         >
           Target Shape
         </h2>
         <div id="threeContainer" class="absolute inset-0"></div>
         <div
-          class="absolute bottom-4 left-0 w-full text-center text-sm font-bold text-gray-700 opacity-60 pointer-events-none"
+          class="absolute bottom-6 left-0 w-full flex justify-center pointer-events-none"
         >
-          Auto-rotating (Drag to inspect)
+          <span
+            class="text-sm font-bold text-amber-800/60 bg-amber-100/50 backdrop-blur px-4 py-1.5 rounded-full"
+            >Auto-rotating (Drag to inspect)</span
+          >
         </div>
       </div>
 
+      <!-- Right Pane -->
       <div
-        class="w-2/3 p-4 bg-gray-300 relative overflow-hidden flex flex-col"
+        class="w-2/3 bg-slate-50/80 rounded-[2rem] border border-white p-6 relative overflow-hidden flex flex-col shadow-inner"
         id="rightPane"
       >
         <h2
-          class="text-3xl font-black text-gray-800/80 mb-4 z-10 text-center pointer-events-none drop-shadow-sm"
+          class="text-2xl font-black text-slate-800/80 mb-5 z-10 text-center pointer-events-none tracking-tight"
         >
           Choose the correct Net
         </h2>
         <div
-          class="w-full flex-1 blueprint-grid rounded-lg p-4 grid grid-cols-2 grid-rows-2 gap-4 relative"
+          class="w-full flex-1 blueprint-grid p-5 grid grid-cols-2 grid-rows-2 gap-6 relative"
           id="optionsGrid"
         ></div>
 
         <!-- Full Screen Overlay -->
         <div
           id="animationCenter"
-          class="absolute inset-0 pointer-events-none hidden items-center justify-center transition-opacity duration-500 z-30 rounded-xl m-4 bg-white/90 backdrop-blur-sm shadow-2xl border-4 border-green-400"
+          class="absolute inset-0 pointer-events-none hidden items-center justify-center transition-opacity duration-500 z-30 rounded-[1.5rem] m-6 bg-white/90 backdrop-blur-md shadow-2xl border-2 border-emerald-400"
         ></div>
       </div>
     </div>
 
-    <!-- Bottom Action Bar -->
+    <!-- Floating Bottom Action Pill -->
     <div
-      class="h-16 bg-gray-800 text-white flex items-center justify-center px-8 shadow-inner shrink-0 relative"
+      class="h-16 max-w-2xl w-full mx-auto mb-6 bg-slate-800/95 backdrop-blur-md rounded-full text-white flex items-center justify-between px-8 shadow-xl shadow-slate-800/20 border border-slate-700 shrink-0 relative"
     >
-      <div class="absolute left-8 flex items-center gap-4">
+      <div class="flex items-center gap-4">
         <span
           id="levelIndicator"
-          class="bg-gray-700 px-3 py-1 rounded text-sm font-bold text-gray-300 shadow-inner"
+          class="bg-slate-700/80 px-4 py-1.5 rounded-full text-sm font-bold text-slate-200 shadow-inner border border-slate-600"
           >Level 1</span
         >
       </div>
-      <div class="text-xl font-medium tracking-wide flex items-center gap-4">
-        <span id="statusText">Choose the correct net.</span>
+      <div
+        class="text-lg font-medium tracking-wide flex items-center justify-center absolute inset-0 pointer-events-none"
+      >
+        <span id="statusText" class="text-slate-300"
+          >Choose the correct net.</span
+        >
       </div>
     </div>
 
@@ -251,19 +309,18 @@
       const PALETTE = [
         "#ef4444",
         "#3b82f6",
-        "#22c55e",
+        "#10b981",
         "#eab308",
         "#a855f7",
         "#f97316",
         "#ec4899",
-        "#14b8a6",
+        "#06b6d4",
       ];
 
       // ==========================================
       // PROCEDURAL NET GENERATOR ENGINE
       // ==========================================
       const NetGenerator = {
-        // Core algorithm to unroll any prism into a 2D DOM Tree dynamically
         generatePrismNet: function (
           sides,
           w,
@@ -287,7 +344,6 @@
               color: sides === 4 && index % 2 !== 0 ? 1 : 0,
             };
 
-            // Add next segment of the body wrapper
             if (index < actualSides - 1) {
               node.children.push({
                 edge: "right",
@@ -296,7 +352,6 @@
               });
             }
 
-            // Top Cap
             if (index === topIdx && mutator !== "missing-cap") {
               let s = baseCapShape;
               if (s === "triangle") s = "triangle-up";
@@ -312,13 +367,12 @@
               });
             }
 
-            // Bottom Cap (or forced Overlap)
             if (
               mutator === "overlap-caps" &&
               index === (topIdx + 1) % actualSides
             ) {
               let s = baseCapShape;
-              if (s === "triangle") s = "triangle-up"; // Clashes on top
+              if (s === "triangle") s = "triangle-up";
               node.children.push({
                 edge: "top",
                 w: capW,
@@ -350,7 +404,6 @@
           return { root: buildSide(0) };
         },
 
-        // Hardcoded Pyramid Generator since radial folds work differently than strip folds
         generatePyramidNet: function (mutator) {
           let children = [];
           if (mutator !== "missing-cap")
@@ -417,7 +470,6 @@
           return { root: { w: 40, h: 40, color: 1, children: children } };
         },
 
-        // --- TIER ENGINES ---
         tier1: function () {
           const isCube = Math.random() > 0.5;
           const sides = 4,
@@ -443,7 +495,6 @@
                 colors: [1, 1, 2, 2, 0, 0],
               };
 
-          // Randomize where the caps attach to dynamically generate T-shapes, Crosses, Z-shapes, etc!
           const t1 = Math.floor(Math.random() * sides);
           const b1 = Math.floor(Math.random() * sides);
 
@@ -823,19 +874,18 @@
         isRotatingGroup = false;
 
       // --- Audio Engine ---
-      const bgMusic = new Audio("sounds/bg_music.mp3");
+      const bgMusic = new Audio("bg_music.mp3");
       bgMusic.loop = true;
-      bgMusic.volume = 0.4; // Updated BG volume
+      bgMusic.volume = 0.4;
 
-      const selectSound = new Audio("sounds/select.mp3");
-      selectSound.volume = 0.5; // Updated select sound volume
+      const selectSound = new Audio("select.mp3");
+      selectSound.volume = 0.4;
 
-      const clickSound = new Audio("sounds/click.mp3");
-      clickSound.volume = 1.0; // Click is max volume
+      const clickSound = new Audio("click.mp3");
+      clickSound.volume = 1.0;
 
-      const wrongSound = new Audio("sounds/wrong.mp3");
-      wrongSound.volume = 0.5; // Updated wrong sound volume
-      const congratsSound = new Audio("sounds/congrats.mp3");
+      const wrongSound = new Audio("wrong.mp3");
+      const congratsSound = new Audio("congrats.mp3");
 
       function playClickSound() {
         clickSound.currentTime = 0;
@@ -847,21 +897,20 @@
         selectSound.play().catch((e) => {});
       }
 
-      // Start BG music strictly on first interaction to respect browser autoplay policies
-      let hasInteracted = false;
-      document.body.addEventListener("pointerdown", () => {
-        if (!hasInteracted) {
-          bgMusic.play().catch((e) => console.log("Audio play failed:", e));
-          hasInteracted = true;
-        }
+      // Main Menu Play Button logic
+      document.getElementById("playNowBtn").addEventListener("click", () => {
+        playClickSound();
+        bgMusic.play().catch((e) => console.log("Audio play failed:", e));
+
+        const menu = document.getElementById("mainMenu");
+        menu.classList.add("opacity-0", "pointer-events-none");
+        setTimeout(() => menu.classList.add("hidden"), 500);
       });
 
       // --- Initialization ---
       function startGame() {
         document.getElementById("winScreen").classList.add("hidden");
         currentLevelNum = 0;
-
-        // Dynamically generate 3 brand new levels every single game
         levelQueue = [
           NetGenerator.tier1(),
           NetGenerator.tier2(),
@@ -1230,7 +1279,6 @@
         document.getElementById("statusText").textContent =
           "Choose the correct net.";
 
-        // Safely stash floating UI elements
         const inlineBtn = document.getElementById("inlineDoneBtn");
         inlineBtn.classList.add("hidden");
         document.body.appendChild(inlineBtn);
@@ -1243,7 +1291,6 @@
         dragText.classList.add("hidden");
         document.body.appendChild(dragText);
 
-        // Clean up the full-screen zoom container if it was active
         const animCenter = document.getElementById("animationCenter");
         animCenter.classList.remove(
           "pop-out",
@@ -1328,7 +1375,6 @@
 
           const builtNet = buildNetDOM(net.root);
 
-          // Centering math
           const bounds = getNetBounds(net.root);
           const centerX = bounds.minX + (bounds.maxX - bounds.minX) / 2;
           const centerY = bounds.minY + (bounds.maxY - bounds.minY) / 2;
@@ -1341,7 +1387,6 @@
           wrapper.addEventListener("click", () => {
             if (gameState !== "selecting") return;
 
-            // Play click sound when the net is selected
             playClickSound();
 
             document
@@ -1352,7 +1397,7 @@
 
             inlineBtn.textContent = "DONE";
             inlineBtn.className =
-              "absolute bottom-2 right-2 bg-yellow-400 text-gray-900 px-4 py-1.5 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer";
+              "absolute bottom-4 right-4 bg-yellow-400 text-yellow-950 px-6 py-2.5 rounded-xl font-bold text-sm uppercase shadow-lg shadow-yellow-400/30 hover:bg-yellow-300 transform transition-transform active:scale-95 z-20 cursor-pointer";
             inlineBtn.disabled = false;
             inlineBtn.classList.remove("hidden");
             wrapper.appendChild(inlineBtn);
@@ -1361,13 +1406,10 @@
         });
       }
 
-      // Inline button logic router
       document
         .getElementById("inlineDoneBtn")
         .addEventListener("click", (e) => {
           e.stopPropagation();
-
-          // Play select sound on button click (DONE, TRY AGAIN, NEXT LEVEL)
           playSelectSound();
 
           if (gameState === "selecting") {
@@ -1398,7 +1440,6 @@
         inlineBtn.textContent = "...";
         status.textContent = "Folding selected net...";
 
-        // Dim other options to focus on this grid cell
         document.querySelectorAll(".option-wrapper").forEach((el) => {
           if (el !== selectedWrapper) {
             el.style.opacity = "0.3";
@@ -1406,10 +1447,8 @@
           }
         });
 
-        // Hide the 2D SVG
         selectedWrapper.querySelector(".net-container").style.opacity = "0";
 
-        // Setup in-place 3D Animation Container
         if (animGroup) animScene.remove(animGroup);
         foldingHinges = [];
         isFolding = false;
@@ -1437,18 +1476,15 @@
         selectedWrapper.appendChild(animContainer);
         animContainer.classList.remove("hidden");
 
-        // Re-inject drag text
         const dragText = document.getElementById("animDragText");
         selectedWrapper.appendChild(dragText);
 
-        // Resize renderer to match the specific grid cell
         const rect = selectedWrapper.getBoundingClientRect();
         animCamera.aspect = rect.width / rect.height;
         animCamera.updateProjectionMatrix();
         animRenderer.setSize(rect.width, rect.height);
 
         setTimeout(() => {
-          // Set staggered start times based on parse index
           foldingHinges.forEach((hinge, index) => {
             hinge.userData.startTime = performance.now() + index * 800;
           });
@@ -1465,38 +1501,29 @@
         if (animControls) animControls.enabled = true;
 
         if (selectedData.isCorrect) {
-          // Play success sound!
           congratsSound.currentTime = 0;
           congratsSound.play().catch((e) => {});
 
-          // Calculate true 3D bounding box of folded shape to center it
           const box = new THREE.Box3().setFromObject(animGroup);
           const center = new THREE.Vector3();
           box.getCenter(center);
 
-          // ZOOM TO FULL RIGHT PANE!
           const animCenter = document.getElementById("animationCenter");
           const animContainer = document.getElementById("threeAnimContainer");
 
-          // Move 3D container to the center pane overlay
           animCenter.appendChild(animContainer);
-
-          // Fade out the background grid completely
           document.getElementById("optionsGrid").style.opacity = "0";
 
-          // Update renderer for large pane
           animCenter.classList.remove("hidden");
           const rect = animCenter.getBoundingClientRect();
           animCamera.aspect = rect.width / rect.height;
           animCamera.updateProjectionMatrix();
           animRenderer.setSize(rect.width, rect.height);
 
-          // Perfectly frame the folded shape's true center
           animCamera.position.set(center.x, center.y, center.z + 10);
           animControls.target.copy(center);
           animControls.update();
 
-          // Animate zoom
           animCenter.classList.remove("opacity-0", "pointer-events-none");
           animCenter.classList.add(
             "pop-out",
@@ -1504,29 +1531,28 @@
             "opacity-100",
           );
 
-          // Move text and button to the large center pane
           dragText.classList.remove("hidden");
           animCenter.appendChild(dragText);
 
           fireConfetti();
           gameState = "done";
-          inlineBtn.textContent = "NEXT LEVEL ";
+          inlineBtn.innerHTML =
+            '<span class="flex items-center justify-center gap-2">NEXT LEVEL <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg></span>';
           inlineBtn.className =
-            "absolute bottom-6 right-6 bg-green-500 text-white px-8 py-4 rounded-xl font-black text-lg uppercase shadow-2xl hover:bg-green-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
+            "absolute bottom-8 right-8 bg-emerald-500 text-white px-8 py-3 rounded-xl font-black text-lg uppercase shadow-xl shadow-emerald-500/30 hover:bg-emerald-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
           inlineBtn.disabled = false;
           animCenter.appendChild(inlineBtn);
 
           status.textContent = "Perfect match! Drag to inspect.";
         } else {
-          // Play failure sound!
           wrongSound.currentTime = 0;
           wrongSound.play().catch((e) => {});
 
-          // KEEP IN GRID CELL FOR INCORRECT
           gameState = "failed";
-          inlineBtn.textContent = "TRY AGAIN ↻";
+          inlineBtn.innerHTML =
+            '<span class="flex items-center justify-center gap-1.5">TRY AGAIN <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></span>';
           inlineBtn.className =
-            "absolute bottom-2 right-2 bg-red-500 text-white px-4 py-1.5 rounded-lg font-bold text-sm uppercase shadow-lg hover:bg-red-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
+            "absolute bottom-4 right-4 bg-red-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm uppercase shadow-lg shadow-red-500/30 hover:bg-red-400 transform transition-transform active:scale-95 z-20 cursor-pointer";
           inlineBtn.disabled = false;
 
           dragText.classList.remove("hidden");
@@ -1539,7 +1565,6 @@
         document.getElementById("statusText").textContent =
           "Choose the correct net.";
 
-        // Hide 3D container & reset UI
         const animContainer = document.getElementById("threeAnimContainer");
         animContainer.classList.add("hidden");
         document.body.appendChild(animContainer);
@@ -1564,7 +1589,6 @@
         }
         selectedNetIndex = null;
 
-        // Brighten up the remaining valid options
         document
           .querySelectorAll(".option-wrapper:not(.disabled)")
           .forEach((el) => {
@@ -1573,7 +1597,6 @@
           });
       }
 
-      // --- Canvas Confetti Engine ---
       const canvas = document.getElementById("confettiCanvas");
       const ctx = canvas.getContext("2d");
       let particles = [];
@@ -1587,7 +1610,6 @@
 
       function fireConfetti() {
         const colors = PALETTE;
-        // Target the center of the right pane
         const originX = window.innerWidth * (2 / 3);
         for (let i = 0; i < 150; i++) {
           particles.push({
@@ -1605,7 +1627,6 @@
         if (particles.length <= 150) animateConfetti();
       }
 
-      // Dedicated massive explosion for the win screen
       function fireMassiveConfetti() {
         const colors = PALETTE;
         for (let i = 0; i < 300; i++) {
